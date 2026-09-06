@@ -2,7 +2,7 @@
 name: sync-cc-tips
 description: 从 Claude Code 最新 changelog 自动同步 tips.jsonl：新增未覆盖条目、修正过时内容、删除已废弃功能，同步所有文档数字，最后调用 commit-cc-plugin 提交。触发场景：用户说 "/sync-cc-tips"、"更新tips"、"同步tips"、"tips需要更新"、"从changelog更新tips"、"sync tips"。可附带版本数量参数，如 "/sync-cc-tips 5" 表示只看最近5个版本。
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   author: desktop client team
 compatibility: 需要网络访问 raw.githubusercontent.com 拉取 changelog；第二步调用 scripts/ 下两个 Python 脚本（标准库，无第三方依赖）；流程末尾调用 commit-cc-plugin skill 完成提交推送。
 allowed-tools: Bash WebFetch Read Edit Task
@@ -247,7 +247,7 @@ wc -l "$f"              # 行数（应与上面相等；文件末尾无空行时
 
 行数不一致或有空行说明格式有破损，回到第四步修复后重新计数。另可用「旧条目数 + 新增 − 删除」做第三重校验，三者应一致。
 
-**共 6 处含条目总数**，逐一将旧数字替换为新总数：
+**共 6 处含条目总数**，逐一将旧数字替换为新总数。⚠️ **下表是已知同步点，不是权威清单——务必以下方全仓库扫描结果为准**（该清单曾两轮漏项，2→4→6 处；经过见 `known-issues.md`）。扫描发现表外命中时，先补表再改数字：
 
 | 文件 | 位置 | 形式 |
 |---|---|---|
@@ -257,10 +257,6 @@ wc -l "$f"              # 行数（应与上面相等；文件末尾无空行时
 | `.kiro/steering/plugins.md` | devops 插件文件清单中的 tips.jsonl 行 | `` - `hooks/sessionstart/tips.jsonl` — N条技巧库 `` |
 | `.kiro/steering/structure.md` | 「关键文件」表中的 tips.jsonl 行 | `` \| `plugins/.../tips.jsonl` \| N 条使用技巧 \| `` |
 | `.kiro/steering/product.md` | 「智能会话增强」条 | `N条使用技巧自动轮播` |
-
-> 同步点清单被人工枚举漏过两轮：2026-09-03 补录 `.codex-plugin/plugin.json` 与 `.kiro/steering/plugins.md`（2→4 处），但漏了同目录的 `structure.md`；2026-09-04 JSONL 迁移时把扫描正则从 `条技巧` 放宽为 `条[^，。|]*技巧`，才发现 `structure.md` 与 `product.md` 两处写的是「N **条使用技巧**」——中间插了「使用」二字，旧正则要求两词紧邻故永不命中，这两处数字从未被任何一轮 sync 更新过，长期停在 425（4→6 处）。
->
-> **教训：清单靠人工枚举必然漏，正则写窄会把「存在」误判成「不存在」。** 务必以下面的全仓库扫描结果为准而非只信本表；扫描发现表外命中时，先补表再改数字。同类失效模式已在 `known-issues.md` 的「取证方法备注」记录过一次。
 
 先用一条命令定位全部候选，再按下表甄别，避免误改：
 
@@ -296,26 +292,7 @@ foreach ($f in @('.claude-plugin/marketplace.json','README.md','plugins/optimus-
 
 > 若某一天 `README.md` 或顶层 `description` 被改成含具体数字的表述，需同步扩充上表——但**不要主动往这些位置添加数字**，同步点越少越不易失准。
 
-### 版本号升级（依据 AGENTS.md 版本管理规则）
-
-tips.jsonl 位于 `plugins/optimus-devops-plugin/hooks/` 内，按 AGENTS.md 触发矩阵「`plugins/*/hooks/` 内脚本或配置」一行，只升**该插件的两份 `plugin.json`**，做 **Patch 升级**（本 skill 的改动性质恒为「修改已有内容」——增删 tips 条目不构成插件层面的功能增删）：
-
-```
-plugins/optimus-devops-plugin/.claude-plugin/plugin.json    ← version 升到新值
-plugins/optimus-devops-plugin/.codex-plugin/plugin.json     ← version 升到同一个新值
-```
-
-⚠️ **两份是同一次改动内一起改，无主从、无抄录关系**——它们是同一个事实的两个 harness 视图。升级前先比对当前值，若已不一致说明历史漏升，本次一并纠正到同值。
-
-⚠️ **`.claude-plugin/marketplace.json` 的顶层 `version` 不动**。AGENTS.md 明确它「仅记录集合里有哪些插件，仅在增删插件时升」，且其 Patch 位永久停在 `0`。本 skill 只改插件内部内容，从不触发它。**（此处曾长期误写为「将 marketplace.json 的 version 做 Patch 升级」，导致升错文件且漏升 `.claude-plugin/plugin.json`，1.4.0 修正。）**
-
-⚠️ 本 skill 自身位于 `.claude/` 下，**改 SKILL.md 不升任何版本号**。
-
-改完两份后跑校验脚本确认同值（`commit-cc-plugin` 第二步也会再校验一次，此处提前自查）：
-
-```bash
-python .claude/skills/commit-cc-plugin/scripts/check_plugin_versions.py .
-```
+**版本号升级不在本 skill 定义**——由 `commit-cc-plugin` 第二步按 AGENTS.md 触发矩阵统一处理，本 skill 只交接事实：本次改动落在 `plugins/optimus-devops-plugin/hooks/` 内，届时应升该插件的两份 `plugin.json`（Patch）。
 
 | 触发条件 | 一线处理 | 仍失败兜底 |
 |---|---|---|
@@ -376,6 +353,6 @@ python .claude/skills/commit-cc-plugin/scripts/check_plugin_versions.py .
 | 删除旧功能条目，但该功能仍可用（只是有了替代方案） | 用户可能仍在用旧方式 | 仅在 changelog 明确标注 Removed/Deprecated 时删除 |
 | 用估算数字代替实际计数更新文档 | 估算不准会导致文档与实际不符 | 必须先统计实际 `^{` 行数再更新，且不加 1 |
 | 抓取失败后继续执行后续步骤 | 基于空数据的操作可能误删现有条目 | 第一步失败 → 立即停止，不执行任何写入操作 |
-| 升 `marketplace.json` 顶层 `version`，或只升两份 `plugin.json` 中的一份 | 顶层版本仅在增删插件时升；两份 plugin.json 不同值会被 `commit-cc-plugin` 阻断 | 只升 `plugins/optimus-devops-plugin/` 下的两份 `plugin.json` 到同一 Patch 值 |
+| 在本 skill 内自行决定版本号怎么升 | 规则的唯一依据是 AGENTS.md 触发矩阵，写第二份必然与之分叉——曾长期误写为升 marketplace 顶层 version 且漏升 `.claude-plugin/plugin.json` | 交给 `commit-cc-plugin` 第二步统一处理，本 skill 只交接「改动落在 `plugins/optimus-devops-plugin/hooks/` 内」这一事实 |
 
 > `.claude/` 下的 skill 文件本身不触发版本号升级（遵循 CLAUDE.md 规范）
