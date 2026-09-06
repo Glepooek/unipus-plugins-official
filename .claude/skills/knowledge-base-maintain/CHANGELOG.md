@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.9.3] - 2026-09-06
+
+### Changed
+- `check_refs.py` 的 `CONSUMER_GLOBS` 增补 `plugins/*/skills/*/references/*.md`——此前只覆盖同级 `*REFERENCE*.md`，不含 `references/` 子目录，而这恰是 anchor 密度最高的位置。随 `dotnet-diagnose-triage` 落地首次暴露此缺口
+
 ## [1.9.2] - 2026-08-30
 
 ### Added

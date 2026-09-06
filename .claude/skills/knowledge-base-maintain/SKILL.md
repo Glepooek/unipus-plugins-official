@@ -2,7 +2,7 @@
 name: knowledge-base-maintain
 description: 新增、修改、迁移、废弃 knowledge-base/ 下的规范条目或 reference 条目时使用；同步更新 index.jsonl 索引、CHANGELOG.md 与版本号，并跑一致性校验与语义查重。触发词："新增规范条目"、"知识库加一条"、"迁移知识库条目"、"废弃规范条目"、"校验知识库索引"、"知识库查重"。
 metadata:
-  version: "1.9.2"
+  version: "1.9.3"
   author: desktop client team
   category: tool
 compatibility: 需要本机 Python 3（跑本 skill scripts/ 下的 check_index.py 与 check_refs.py 做一致性校验），无 MCP 或第三方 CLI 依赖。

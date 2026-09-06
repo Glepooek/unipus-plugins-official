@@ -15,7 +15,7 @@
 ## 适用范围与读者
 
 - **适用范围**：生产或测试环境出现内存持续增长、进程挂起、CPU 打满、崩溃退出、句柄耗尽等问题时的诊断取证
-- **读者**：需要定位 .NET 应用运行期问题的开发与运维人员；本领域一期无固定 skill 消费者
+- **读者**：需要定位 .NET 应用运行期问题的开发与运维人员；本领域的 skill 消费者是 `plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage`（由 `dotnet-diagnose` agent 编排调用）
 
 ## 收录判据
 

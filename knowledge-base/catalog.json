@@ -116,8 +116,8 @@
       "categories": ["rules", "reference"],
       "owner": "desktop client team",
       "status": "active",
-      "consumers": [],
-      "reviewed_at": "2026-09-05",
+      "consumers": ["plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage"],
+      "reviewed_at": "2026-09-06",
       "notes": "事后诊断与定位：征象判据、CLR 可观测结构、dump 抓取与分析命令、SOS 输出解读。覆盖 .NET Framework 4.x / .NET 6+ / Linux 容器三运行时的共性层；预防性编码规范归 csharp 与 wpf，平台生命周期归 dotnet。含活体监控工具链（EventPipe / dotnet-counters / dotnet-trace，仅 .NET 5+）与 WPF 专属归因分支（Dispatcher 死锁、四类泄漏形态，仅 Windows）；暂不含 PerfView/ETW"
     }
   ]

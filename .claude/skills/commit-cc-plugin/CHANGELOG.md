@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.6.1] - 2026-09-06
+
+### Fixed
+- `test_check_plugin_versions.py` 的 `test_agents_field_is_allowed` 固件路径由 `./agents/x.agent.md` 改为 `./agents/x.md`——避免测试固件成为 `.agent.md` 命名的残留示范，断言本身不受影响
+
 ## [3.6.0] - 2026-09-06
 
 ### Added

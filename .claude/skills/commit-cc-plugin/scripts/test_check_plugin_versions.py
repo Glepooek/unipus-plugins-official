@@ -109,7 +109,7 @@ class TestCheckPluginVersions(unittest.TestCase):
 
     def test_agents_field_is_allowed(self):
         make_plugin(self.root, "p-agents", "1.0.0", "1.0.0",
-                    claude_extra={"agents": ["./agents/x.agent.md"]})
+                    claude_extra={"agents": ["./agents/x.md"]})
         self.assertEqual(check_all(self.root), [])
 
     def test_directory_without_any_plugin_json_is_skipped(self):

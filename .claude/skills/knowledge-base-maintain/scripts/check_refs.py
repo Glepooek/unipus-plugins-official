@@ -27,6 +27,7 @@ from pathlib import Path
 CONSUMER_GLOBS = (
     "plugins/*/skills/*/SKILL.md",
     "plugins/*/skills/*/*REFERENCE*.md",
+    "plugins/*/skills/*/references/*.md",
     "knowledge-base/*/rules/*.md",
     "knowledge-base/*/reference/*.md",
 )
