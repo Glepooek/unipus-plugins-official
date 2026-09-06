@@ -2,7 +2,7 @@
 name: dotnet-diagnose-triage
 description: 解读已取得的 .NET 取证输出并按假设台账定位根因：SOS 命令输出逐列语义、dump 类型与符号的可用性前置校验、假设消解与跨轮续用、WPF 专属归因（Dispatcher 死锁与四类泄漏堆形态）、.NET Framework 4.x 分析侧。判据全部引用 knowledge-base/dotnet-debugging/，不复制正文。触发词：这个 dump 说明什么问题、SOS 输出怎么读、!dumpheap 结果分析、!syncblk 死锁判断、!gcroot 根链读法、托管内存泄漏定位、线程池饥饿判断、WPF 窗口关不掉泄漏、崩溃日志异常链、analyze dump output、read SOS output。不做取证抓取——需要抓 dump 或选采集工具时转 dump-collect / dotnet-trace-collect。
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   author: desktop client team
   category: quality
 compatibility: 纯文本推理，无运行时依赖。判据来源 knowledge-base/dotnet-debugging/（须与本仓库同处一个工作树才能读到）。不执行任何诊断命令——抓取 dump 与采集 trace 由用户自行完成或转微软官方 dotnet-diag 插件。

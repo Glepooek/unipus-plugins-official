@@ -1,6 +1,6 @@
 # dotnet-diagnose-triage
 
-> 版本：1.0.0 | 分类：quality
+> 版本：1.0.1 | 分类：quality
 
 解读已取得的 .NET 取证输出（dump / SOS 输出 / trace 报告 / 崩溃日志），按假设台账消解循环定位根因，产出带出处与强度标注的诊断结论。
 
