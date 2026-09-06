@@ -2,7 +2,7 @@
 name: sync-cc-tips
 description: 从 Claude Code 最新 changelog 自动同步 tips.jsonl：新增未覆盖条目、修正过时内容、删除已废弃功能，同步所有文档数字，最后调用 commit-cc-plugin 提交。触发场景：用户说 "/sync-cc-tips"、"更新tips"、"同步tips"、"tips需要更新"、"从changelog更新tips"、"sync tips"。可附带版本数量参数，如 "/sync-cc-tips 5" 表示只看最近5个版本。
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: desktop client team
 compatibility: 需要网络访问 raw.githubusercontent.com 拉取 changelog；第二步调用 scripts/ 下两个 Python 脚本（标准库，无第三方依赖）；流程末尾调用 commit-cc-plugin skill 完成提交推送。
 allowed-tools: Bash WebFetch Read Edit Task
@@ -196,7 +196,7 @@ changelog 的单行描述往往只覆盖核心功能，生成前需补充完整�
 
 ### 格式校验（每条写入前执行）
 - 必须是合法 JSON 单行，含 `id`/`category`/`title`/`body` 四字段
-- `body` 必须包含"功能："、"效果："、"例子："三个字段
+- `body` 必须包含"功能："、"效果："、"例子："三个字段。允许分平台拆成多行"例子（Windows）："、"例子（Linux/Mac）："——**校验时按行首 `例子` 判断，不要求 `例子` 与 `：` 紧邻**（曾因字面匹配 `例子：` 把 `--add-dir` 的括号后缀写法误判为缺字段）
 - 例子中的可执行形式必须是以下**三种形态之一**，禁止裸缩写：
   1. CLI 完整命令：`claude --xxx`
   2. 斜杠命令：`/xxx`
@@ -296,7 +296,26 @@ foreach ($f in @('.claude-plugin/marketplace.json','README.md','plugins/optimus-
 
 > 若某一天 `README.md` 或顶层 `description` 被改成含具体数字的表述，需同步扩充上表——但**不要主动往这些位置添加数字**，同步点越少越不易失准。
 
-同时将 `.claude-plugin/marketplace.json` 的 `version` 做 **Patch 升级**（`x.x.X`），因为这是已有内容的更新/修复，符合版本管理规范。升级后按 AGENTS.md 要求把 `plugins/optimus-devops-plugin/.codex-plugin/plugin.json` 的 `version` 改为**相同值**（该文件从 marketplace.json 抄录，不是独立真源）——升级前先比对两者当前值，若已不一致说明历史同步漏过，本次一并纠正到同值。
+### 版本号升级（依据 AGENTS.md 版本管理规则）
+
+tips.jsonl 位于 `plugins/optimus-devops-plugin/hooks/` 内，按 AGENTS.md 触发矩阵「`plugins/*/hooks/` 内脚本或配置」一行，只升**该插件的两份 `plugin.json`**，做 **Patch 升级**（本 skill 的改动性质恒为「修改已有内容」——增删 tips 条目不构成插件层面的功能增删）：
+
+```
+plugins/optimus-devops-plugin/.claude-plugin/plugin.json    ← version 升到新值
+plugins/optimus-devops-plugin/.codex-plugin/plugin.json     ← version 升到同一个新值
+```
+
+⚠️ **两份是同一次改动内一起改，无主从、无抄录关系**——它们是同一个事实的两个 harness 视图。升级前先比对当前值，若已不一致说明历史漏升，本次一并纠正到同值。
+
+⚠️ **`.claude-plugin/marketplace.json` 的顶层 `version` 不动**。AGENTS.md 明确它「仅记录集合里有哪些插件，仅在增删插件时升」，且其 Patch 位永久停在 `0`。本 skill 只改插件内部内容，从不触发它。**（此处曾长期误写为「将 marketplace.json 的 version 做 Patch 升级」，导致升错文件且漏升 `.claude-plugin/plugin.json`，1.4.0 修正。）**
+
+⚠️ 本 skill 自身位于 `.claude/` 下，**改 SKILL.md 不升任何版本号**。
+
+改完两份后跑校验脚本确认同值（`commit-cc-plugin` 第二步也会再校验一次，此处提前自查）：
+
+```bash
+python .claude/skills/commit-cc-plugin/scripts/check_plugin_versions.py .
+```
 
 | 触发条件 | 一线处理 | 仍失败兜底 |
 |---|---|---|
@@ -332,7 +351,7 @@ foreach ($f in @('.claude-plugin/marketplace.json','README.md','plugins/optimus-
 
 📊 条目总数：{旧数} → {新数}
 📄 已同步：marketplace.json · hooks/README.md · .codex-plugin/plugin.json · .kiro/steering/{plugins,structure,product}.md
-🔖 版本：{旧版本} → {新版本}（Patch）
+🔖 版本：两份 plugin.json {旧版本} → {新版本}（Patch）
 🔖 同步锚点：v{锚点版本} → v{最新版本}
 
 ---
@@ -357,5 +376,6 @@ foreach ($f in @('.claude-plugin/marketplace.json','README.md','plugins/optimus-
 | 删除旧功能条目，但该功能仍可用（只是有了替代方案） | 用户可能仍在用旧方式 | 仅在 changelog 明确标注 Removed/Deprecated 时删除 |
 | 用估算数字代替实际计数更新文档 | 估算不准会导致文档与实际不符 | 必须先统计实际 `^{` 行数再更新，且不加 1 |
 | 抓取失败后继续执行后续步骤 | 基于空数据的操作可能误删现有条目 | 第一步失败 → 立即停止，不执行任何写入操作 |
+| 升 `marketplace.json` 顶层 `version`，或只升两份 `plugin.json` 中的一份 | 顶层版本仅在增删插件时升；两份 plugin.json 不同值会被 `commit-cc-plugin` 阻断 | 只升 `plugins/optimus-devops-plugin/` 下的两份 `plugin.json` 到同一 Patch 值 |
 
 > `.claude/` 下的 skill 文件本身不触发版本号升级（遵循 CLAUDE.md 规范）

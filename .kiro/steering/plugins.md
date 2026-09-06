@@ -80,7 +80,7 @@
 
 **关键文件:**
 - `hooks/hooks.json` — Hook 配置
-- `hooks/sessionstart/tips.jsonl` — 281条技巧库
+- `hooks/sessionstart/tips.jsonl` — 280条技巧库
 - `hooks/sessionstart/show-tip.sh` — 轮播脚本
 - `hooks/notification/permission-notify.ps1` — 通知脚本
 
