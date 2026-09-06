@@ -1,6 +1,6 @@
 {
   "name": "optimus-decision-plugin",
-  "version": "12.3.1",
+  "version": "1.0.0",
   "description": "决策支持型工具：把书籍/长内容蒸馏出的方法论转化为工程实践中的选型决策依据（数据结构/算法策略/复杂度分析）",
   "skills": "./skills/",
   "author": {

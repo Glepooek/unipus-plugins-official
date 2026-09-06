@@ -1,6 +1,6 @@
 {
   "name": "optimus-devops-plugin",
-  "version": "14.0.0",
+  "version": "1.0.0",
   "description": "DevOps：Jenkins 构建、项目分析、周报转写、skill 链接同步",
   "skills": "./skills/",
   "author": {

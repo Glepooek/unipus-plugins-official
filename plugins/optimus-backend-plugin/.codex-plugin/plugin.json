@@ -1,6 +1,6 @@
 {
   "name": "optimus-backend-plugin",
-  "version": "12.1.9",
+  "version": "1.0.0",
   "description": "后端开发：需求到实现全流程、公司服务 API 对接、C# 代码审查",
   "skills": "./skills/",
   "author": {

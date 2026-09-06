@@ -1,6 +1,6 @@
 {
   "name": "optimus-prd-plugin",
-  "version": "12.1.8",
+  "version": "1.0.0",
   "description": "PRD 全流程：需求文档创建、优化与审查",
   "skills": "./skills/",
   "author": {

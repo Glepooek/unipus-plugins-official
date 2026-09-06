@@ -1,6 +1,6 @@
 {
   "name": "optimus-frontend-plugin",
-  "version": "12.1.9",
+  "version": "1.0.0",
   "description": "WPF 前端开发：MasterGo 设计稿转页面与组件库、SVG 转 XAML、XAML 代码审查",
   "skills": "./skills/",
   "author": {

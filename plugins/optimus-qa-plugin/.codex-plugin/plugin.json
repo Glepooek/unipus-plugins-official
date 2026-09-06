@@ -1,6 +1,6 @@
 {
   "name": "optimus-qa-plugin",
-  "version": "12.1.8",
+  "version": "1.0.0",
   "description": "测试 QA：用例设计与报告、JMeter 与 UI 自动化、设计稿一致性校验、飞书项目同步",
   "skills": "./skills/",
   "author": {

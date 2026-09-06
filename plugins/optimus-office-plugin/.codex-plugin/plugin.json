@@ -1,6 +1,6 @@
 {
   "name": "optimus-office-plugin",
-  "version": "12.1.8",
+  "version": "1.0.0",
   "description": "文档处理：Word/Excel/PPT/PDF 生成，网页与本地文件转 Markdown",
   "skills": "./skills/",
   "author": {
