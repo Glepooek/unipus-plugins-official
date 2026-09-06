@@ -1,6 +1,6 @@
 {
   "name": "optimus-mcp-servers",
-  "version": "12.1.8",
+  "version": "1.0.0",
   "description": "MCP 服务集成：GitHub、MasterGo 设计协作、飞书项目",
   "mcpServers": "./.mcp.json",
   "author": {
