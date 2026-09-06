@@ -220,6 +220,19 @@ class TestExtractRefs(unittest.TestCase):
                 "knowledge-base/wpf/README.md\n\n`rules/03-mvvm.md` § 1. MVVM 框架选型，另见下文\n")
             self.assertEqual(extract_refs(c, f.root)[0][4], "MVVM 框架选型")
 
+    def test_plain_title_stops_at_closing_quote(self):
+        """整句转述包裹引用时（「修复方向见 `x.md § 2. 标题`」），闭引号不属于标题。
+
+        `plugins/*/skills/*/references/*.md` 纳入检查后首次出现的形态：判据句被原文
+        转述、外层用「」包裹，闭引号紧跟标题之后。不排除会把它吞进标题判出假失效。
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Fixture(tmp)
+            c = f.consumer(
+                "原文即为：「修复方向见 `knowledge-base/wpf/rules/03-mvvm.md § 7. 事件与订阅`」。\n")
+            self.assertEqual(extract_refs(c, f.root)[0][4], "事件与订阅")
+            self.assertEqual(check_consumer(c, f.root)[0], [])
+
     def test_kb_spec_file_resolves_relative_ref_against_own_domain(self):
         """知识库正文里的 `rules/xxx.md` 相对引用，基准领域是该文件自身所在领域。
 

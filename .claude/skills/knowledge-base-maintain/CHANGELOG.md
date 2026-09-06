@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.4] - 2026-09-06
+
+### Fixed
+- `SECTION_RE` 的两个裸标题分支（`plain` / `spaced`）终止符集增补闭引号 `」` `”`——引用被整句转述包裹时（「修复方向见 `x.md § 2. 标题`」），闭引号被吞进标题，导致 `verdict-forms.md:20` 这类正确引用被判失效。该形态随 1.9.3 把 `references/` 纳入检查后首次出现，L62-63 注释原先「skill 的引用写在表格单元格中，踩不到这个边界」的假设在散文式转述上不成立
+- 配套回归测试 `test_plain_title_stops_at_closing_quote`（142 tests）
+
 ## [1.9.3] - 2026-09-06
 
 ### Changed
