@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.6.0] - 2026-09-06
+
+### Added
+- 第二步新增阻断式校验：`scripts/check_plugin_versions.py` 比对每插件两份 `plugin.json` 的 `version`，不一致则禁止提交（配 11 个 unittest 用例，含「报错措辞不得写以某一份为准」一条）
+
+### Changed
+- 第二步「版本号决策」整节重写：版本落点从 `.claude-plugin/marketplace.json` 顶层下移至每插件的两份 `plugin.json`；升级幅度表删除，统一以 `AGENTS.md` 版本管理规则为唯一依据（原表与 AGENTS.md 有两行差异）
+- 第三步暂存示例改为两份 `plugin.json`，不再示范 `git add .claude-plugin/marketplace.json`
+- 常见错误表增两行：只升一份 `plugin.json`、改插件内容却升 marketplace 顶层
+
 ## [3.5.0] - 2026-09-04
 
 ### Changed

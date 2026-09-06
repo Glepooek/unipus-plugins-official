@@ -2,7 +2,7 @@
 name: commit-cc-plugin
 description: 在 optimus-plugins-official 插件仓库中提交并推送改动时使用。任何涉及此仓库 git 提交/推送的操作，都必须使用此 skill，绝不能用普通 git 工作流替代。触发场景：用户明确表达提交或推送意图，如说"提交"、"推上去"、"push"、"commit"、"保存改动"、"同步到远端"、"帮我提交"、"推到 master"、"推一下"、"存一下"。
 metadata:
-  version: "3.5.0"
+  version: "3.6.0"
   author: desktop client team
 compatibility: 需要 Git 仓库环境及远程推送权限；无 MCP 或第三方 CLI 依赖。
 allowed-tools: Bash Edit
@@ -42,26 +42,46 @@ git log --oneline -5
 
 ## 第二步 — 版本号决策
 
-插件版本号决策遵循仓库的插件发布约定；Git tag 与发布流程遵循 [`knowledge-base/git/rules/04-versioning-release.md`](../../../knowledge-base/git/rules/04-versioning-release.md)。本步骤只处理本仓库插件目录与 marketplace 的版本联动：
+插件版本号规则的**唯一依据是 `AGENTS.md` 的「版本管理规则」节**（触发矩阵 + 幅度表），本步骤不重复定义，只给执行动作。Git tag 与发布流程遵循 [`knowledge-base/git/rules/04-versioning-release.md`](../../../knowledge-base/git/rules/04-versioning-release.md)。
 
-- **`.claude/` 下的文件** → 跳过，不升级
-- **`plugins/` 下的文件** → 按下表判断：
+**第 1 步 — 判断本次改动落在哪里：**
 
-| 变更类型 | 升级 |
-|---|---|
-| 新增 skill / command / hook / subagent / mcp / lsp，或新增插件目录 | **Minor** `x.X.x` |
-| 更新/修复已有内容（改进、修复、文档） | **Patch** `x.x.X` |
-| 删除或重命名用户可见功能；破坏性架构变更 | **Major** `X.x.x` |
-| 删除内部实现（hook 脚本调整、辅助文件）；配置微调 | **Patch** `x.x.X` |
+- **`.claude/`、`docs/`、`knowledge-base/`、`AGENTS.md`、`CLAUDE.md`** → 跳过，不升任何版本号
+- **`plugins/<plugin>/` 下的内容** → 升该插件的**两份** `plugin.json`（见下）
+- **新增或删除整个插件** → 除插件自身版本外，另升 `.claude-plugin/marketplace.json` 的**顶层** `version`
+- **只改了 `plugin.json` 的 `version` 字段本身** → 不再额外升（否则递归）
+- **改了 marketplace 的插件 `description` 等展示元数据** → 不升任何版本号
 
-如需升级，编辑 `.claude-plugin/marketplace.json` 的 `"version"` 字段，随本次一并暂存。
+**第 2 步 — 若需升插件版本，两份文件同步改：**
+
+```
+plugins/<plugin>/.claude-plugin/plugin.json    ← version 升到新值
+plugins/<plugin>/.codex-plugin/plugin.json     ← version 升到同一个新值
+```
+
+⚠️ **两份是同一次改动内一起改，没有先后主从**。新版本号由本次改动的性质决定（`AGENTS.md` 幅度表），两份文件同等地是这个决定的记录——不是一方抄另一方。
+
+⚠️ **`marketplace.json` 的插件条目内永不填写 `version`**——它会被 `plugin.json` 静默覆盖，且本仓条目 `source` 为本地路径时官方还会报不一致警告。
+
+⚠️ **`cangjie-skill` 不参与本机制**——它是外部 git url 源，版本由上游 commit SHA 决定。
+
+**第 3 步 — 校验两份同值（阻断式）：**
+
+```bash
+python .claude/skills/commit-cc-plugin/scripts/check_plugin_versions.py .
+```
+
+🔴 **CHECKPOINT — 退出码非 0 则禁止继续提交**。按报错提示回头判断本次改动该升什么号，把两份都改成该值后重跑，直到通过。
+
+**不要**因为报错提到某一份文件就直接拿另一份覆盖它——错的可能恰好是"另一份"（该升 Minor 却升了 Patch），覆盖会把正确的一边也改错。
 
 ## 第三步 — 暂存与原子性核查
 
 **禁止 `git add -A`**，逐文件暂存：
 
 ```bash
-git add .claude-plugin/marketplace.json
+git add plugins/<插件名>/.claude-plugin/plugin.json
+git add plugins/<插件名>/.codex-plugin/plugin.json
 git add plugins/<插件名>/skills/<skill名>/SKILL.md
 # ... 只添加本次任务的文件
 
@@ -218,8 +238,10 @@ git push origin master
 | 错误 | 正确做法 |
 |---|---|
 | `git add -A` | 逐文件暂存，避免混入敏感文件 |
-| `.claude/` 下改动也升级版本 | 仅 `plugins/` 下变更才判断版本；Git 版本与发布规则见 `knowledge-base/git/rules/04-versioning-release.md` |
-| 新增 skill 忘记升级版本 | 新增内容 → Minor |
+| `.claude/` 下改动也升级版本 | 仅 `plugins/` 下变更才判断版本；规则见 `AGENTS.md` 版本管理规则 |
+| 新增 skill 忘记升级版本 | 新增内容 → 插件两份 `plugin.json` 升 Minor，且新 skill 的 `metadata.version` 起 `1.0.0` |
+| 只升了一份 `plugin.json` | 两份必须同值——第二步的校验脚本会阻断 |
+| 改插件内容却升了 marketplace 顶层 | 顶层仅在增删插件时升；改插件内部内容只升该插件的 `plugin.json` |
 | 提交消息过于模糊（"update files"） | 按 `knowledge-base/git/rules/02-commit-messages.md` 写明变更意图 |
 | skill 内容改进就升级 Major | Major 仅用于破坏性变更 |
 | `git push --force` 或 `git push -f` | 遵循 `knowledge-base/git/rules/03-pull-requests.md` 的强制推送限制；push 失败先排查原因，最多重试一次 |
