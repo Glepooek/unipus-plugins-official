@@ -25,7 +25,7 @@
 
 复合 skill 调用：`/plugin-name:skill-name:substep`（两个 harness 语法一致，仅前缀符号不同）。
 
-**第三种产物形态：agent**（`plugins/*/agents/<name>.agent.md`）。与 skill 的区别是上下文隔离——skill 注入当前对话，agent 独立上下文只收一个 prompt，适合单次可闭环、且需与主对话隔离的判定类任务。**必须在每插件 `.claude-plugin/plugin.json` 显式声明 `agents` 文件路径数组**（该字段是 replaces 语义，声明后默认目录扫描被取代，杜绝把配套文档误加载成假 agent）；Claude 侧按 `plugin-name:agent-name` @-mention 调用，Codex 侧同名触发。agent 的配套文档放 `plugins/*/agent-docs/<name>/`（**不放 `agents/`**）、独立版本化、以及 darwin-skill 门禁豁免等细则，见 `.claude/rules/agent-conventions.md`。
+**第三种产物形态：agent**（`plugins/*/agents/<name>.md`）。与 skill 的区别是上下文隔离——skill 注入当前对话，agent 独立上下文只收一个 prompt，适合单次可闭环、且需与主对话隔离的判定类任务。**必须在每插件 `.claude-plugin/plugin.json` 显式声明 `agents` 文件路径数组**（该字段是 replaces 语义，声明后默认目录扫描被取代，杜绝把配套文档误加载成假 agent）；Claude 侧按 `plugin-name:agent-name` @-mention 调用，Codex 侧同名触发。agent 的配套文档放 `plugins/*/agent-docs/<name>/`（**不放 `agents/`**）、独立版本化、以及 darwin-skill 门禁豁免等细则，见 `.claude/rules/agent-conventions.md`。
 
 ---
 
@@ -85,7 +85,7 @@ python -m unittest discover -s .claude/skills/sync-cc-tips/scripts -p "test_*.py
 | 改动的文件 | 插件 `plugin.json`（两份同步） | `SKILL.md` `metadata.version` | agent CHANGELOG | marketplace 顶层 |
 |---|---|---|---|---|
 | `plugins/*/skills/<name>/` 内任一文件 | ✅ | ✅ | — | ❌ |
-| `plugins/*/agents/<name>.agent.md` | ✅ | — | ✅ | ❌ |
+| `plugins/*/agents/<name>.md` | ✅ | — | ✅ | ❌ |
 | `plugins/*/agent-docs/<name>/` 内文件 | ✅ | — | ✅ | ❌ |
 | `plugins/*/hooks/` 内脚本或配置 | ✅ | — | — | ❌ |
 | `plugins/*/scripts/`、`.mcp.json`、`mcp.config.json` 等插件级资源 | ✅ | — | — | ❌ |

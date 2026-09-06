@@ -62,7 +62,7 @@
 
 | 层 | 文件 | 承载什么 | 体量目标 |
 |---|---|---|---|
-| **编排层** | `agents/dotnet-diagnose.agent.md` | 三步主干、加载 skill 的时机、边界与免责声明、输出格式（含台账交接指令） | ≤ 80 行 |
+| **编排层** | `agents/dotnet-diagnose.md` | 三步主干、加载 skill 的时机、边界与免责声明、输出格式（含台账交接指令） | ≤ 80 行 |
 | **承载层** | `skills/dotnet-diagnose-triage/SKILL.md` + `references/` | 判据两形态、征象映射表、两跳路由、B 组前置校验、崩溃日志定位、台账规则与修复方向分级、三结论强度、自检四项、失败处理、交接表 | SKILL.md 主干 + 按需下钻的 references |
 
 agent 的 `tools` 因此**必须包含 skill 加载能力**（`'skill'` / `'Skill'`），这是与原设计的实质差异。
@@ -100,17 +100,31 @@ agent 无跨调用状态，因此**台账的延续必须由输出自身携带**�
 
 | 维度 | Claude Code | Codex |
 |---|---|---|
-| agent 目录 | 插件根 `agents/`，**必须在 `.claude-plugin/plugin.json` 显式声明 `agents` 文件路径数组**（该字段是 replaces 语义，取代默认扫描） | 插件根 `agents/`（官方 `dotnet-diag/0.1.0/agents/` 实证） |
-| 文件命名 | 无强制规则，`name` 字段优先，文件名为 fallback。⚠️ `.agent.md` 双扩展名来自 **VS Code / Copilot 约定，非 Claude Code 官方**（官方示例为纯 `.md`），沿用它是跟随微软 `dotnet/skills` 实践 | `*.agent.md`（官方实践） |
+| agent 目录 | 插件根 `agents/`，在 `.claude-plugin/plugin.json` 显式声明 `agents` **文件路径数组**（官方 replaces 语义，取代默认扫描；实测加载正常） | 插件根 `agents/`（官方 `dotnet-diag/0.1.1/agents/` 实证） |
+| 文件命名 | **纯 `<name>.md`**（官方文档全部示例形态，如 `agents/reviewer.md`）。`name` 字段优先，文件名仅在无 `name` 或 frontmatter 解析失败时作 fallback | 同（`.agent.md` 是微软自家约定，本仓不采用，理由见下） |
 | agent 调 skill | `Skill` 工具 | `skill` 工具（官方 agent 的 `tools` 实证含 `'skill'`） |
 | 子代理能力 | Agent 工具 | subagents 2026-03-14 GA，manager-worker，最多 8 并行 |
 
-**同一份 `*.agent.md` 两侧都能加载**，`name`/`description`/`tools` 三字段是公共交集。
+**同一份 agent 文件两侧都能加载**，`name`/`description`/`tools` 三字段是公共交集。
 
-**两个必须注意的约束**：
+**四条实测确认的约束**（CLI 2.1.261，2026-09-06 逐条验证）：
 
-1. **插件 agent 的 frontmatter 容错是静默降级而非报错**——解析失败时不报错，而是「文件名当 name、description 变成 `Agent from <plugin> plugin`、**全部字段被忽略**」。因此交付前必须跑 `claude plugin validate ./plugins/optimus-devops-plugin`
-2. **`hooks` / `mcpServers` / `permissionMode` 三字段插件 agent 不支持**（Claude 侧安全限制），hook 形态的自动触发走不通
+1. **`agents` 显式声明工作正常，agent 真实可调用**。实测以 `-p` 无头模式询问「有哪些 agent 可用」，声明 `"agents": ["./agents/good.md"]` 的探针插件返回 `probe5:probe-good`——加载成功，且注册名取自 frontmatter 的 `name`（`probe-good`）而非文件名（`good`），与官方文档一致
+2. ⚠️ **`claude plugin details` 的 Agents 列不可作为加载判据**（两个缺陷）：① 声明 `agents` 字段时该列统计为 `0`，即便 agent 实际已加载（官方 `dotnet-diag` 0.1.1 同现象）；② 该列显示的是**文件名**，不是注册名。**核验 agent 是否真的可用要用 `-p` 无头模式实调**（见下表）
+3. **`agents` 只接受文件路径，不接受目录**——目录形态 `["./agents/"]` 被 `claude plugin validate` 判 `agents.0: Invalid input`。官方文档虽以 `["./commands/", "./extras/"]` 作为 replace 类字段保留默认目录的范式，但该范式**不适用于 `agents`**（其字段描述也无 `commands`/`workflows` 那样的 "or directories" 限定）
+4. **`hooks` / `mcpServers` / `permissionMode` 三字段插件 agent 不支持**（官方文档明示的安全限制），hook 形态的自动触发走不通
+
+**frontmatter 解析失败是静默降级，`validate` 能查出来**：CLI 报错原文为「At runtime this agent loads with its name taken from the filename and every other frontmatter field silently dropped」——与官方文档描述一致。**声明 `agents` 与否都能检出**（实测两种配置同样报错）。
+
+⚠️ 但 YAML 容错很强：`tools: [unclosed` 这类会被解析成合法值，不算解析失败。**因此「validate 通过」不等于「frontmatter 写对了」**，字段名拼错、值类型不符都查不出来——这类只能靠人工核对字段清单（§ 8.2）。
+
+**三条核验命令，作用互补，缺一不可**：
+
+| 命令 | 校验什么 | 查不到什么 |
+|---|---|---|
+| `claude plugin validate ./plugins/<plugin>` | manifest JSON 结构、`agents` 声明的路径存在性、**agent frontmatter 能否解析** | 能解析但写错的字段（拼错的键名、类型不符的值） |
+| `claude plugin details <plugin>` | 运行时组件清单与 token 成本（Skills / Hooks 列可信） | ⚠️ **Agents 列不可信**（见约束 2），不能用它判断 agent 是否加载 |
+| `claude -p "列出你可用的 agent"`（无头模式实调） | **agent 是否真实注册、注册名是什么** | 不校验文件结构 |
 
 ## 3. 核心设计：假设消解循环
 
@@ -376,10 +390,10 @@ AGENTS.md 要求新产物自检「引导器 / 传感器」配对。本 agent 是
 
 | 文件 | 内容 | 适用规范 |
 |---|---|---|
-| `plugins/optimus-devops-plugin/agents/dotnet-diagnose.agent.md` | 编排层：三步主干、加载 skill 时机、边界、输出格式（含台账交接块）、免责声明。**≤ 80 行** | `.claude/rules/agent-conventions.md`（四字段 frontmatter，**有 CHANGELOG/README，位置在 `agent-docs/`**） |
+| `plugins/optimus-devops-plugin/agents/dotnet-diagnose.md` | 编排层：三步主干、加载 skill 时机、边界、输出格式（含台账交接块）、免责声明。**≤ 80 行** | `.claude/rules/agent-conventions.md`（三字段 frontmatter，**有 CHANGELOG/README，位置在 `agent-docs/`**） |
 | `plugins/optimus-devops-plugin/agent-docs/dotnet-diagnose/CHANGELOG.md` | 初始 `[1.0.0]` — **agent 版本号真源** | `.claude/rules/doc-conventions.md` |
 | `plugins/optimus-devops-plugin/agent-docs/dotnet-diagnose/README.md` | 六章节，其中「所处层级」按与相邻产物的划界画图、「触发词」改为调用方式与触发面 | `.claude/rules/doc-conventions.md`（agent 分栏） |
-| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | **已在本次规范实施时新建**（`name` + `version`）；本次只需**增补** `"agents": ["./agents/dotnet-diagnose.agent.md"]` | `.claude/rules/agent-conventions.md` |
+| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | **已在本次规范实施时新建**（`name` + `version`）；本次只需**增补** `"agents": ["./agents/dotnet-diagnose.md"]` | `.claude/rules/agent-conventions.md` |
 | `plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage/SKILL.md` | 承载层主干：台账规则（含跨轮续用）、自检四项、三结论强度、九条失败处理、交接表、合规约束 | **skill 完整规范**（六字段 + metadata.version 1.0.0） |
 | `.../skills/dotnet-diagnose-triage/references/symptom-hypothesis-map.md` | 征象映射表（8 类 × 合并候选集）+ 二维路由表 + 第二跳去向清单 | — |
 | `.../skills/dotnet-diagnose-triage/references/evidence-precheck.md` | B 组三项证据可用性校验 + 崩溃日志定位与区分线 | — |
@@ -393,22 +407,22 @@ AGENTS.md 要求新产物自检「引导器 / 传感器」配对。本 agent 是
 
 ### 8.2 frontmatter 规格
 
-照官方 `dotnet-diag` 范式，仅用两侧公共交集字段：
+照官方文档的合法字段清单，仅用两侧公共交集字段：
 
 ```yaml
 ---
 name: dotnet-diagnose
 description: <见 § 8.3>
 tools: ['read', 'search', 'skill', 'Read', 'Glob', 'Grep', 'Skill', 'read_file', 'glob', 'grep_search']
-license: MIT
 ---
 ```
 
 - **`tools` 必须含 skill 加载能力**（`'skill'` / `'Skill'`）——承载层在 skill 里，无此能力则 agent 读不到判据表（官方 `optimizing-dotnet-performance.agent.md` 同理列了 `'task'`、`'skill'`）
 - **不含任何写入或执行工具**：收窄后不执行命令、不修改文件。**因此台账不落文件，只能靠输出自带交接块跟轮**（§ 2.4）
 - **`tools` 列跨 harness 别名**：官方做法，同一能力两侧工具名不同
-- **不加 `metadata.version`**：插件 agent 的 11 个合法字段里**不含 `metadata`**（与 skill 不同——skill 有 agentskills.io 规范明确留出的 `metadata` 自由映射）；且 Claude 侧 frontmatter 容错是静默降级（解析失败则全部字段被忽略），加未知键是在赌文档空白。**agent 版本号记在 `agent-docs/dotnet-diagnose/CHANGELOG.md` 的最新 `## [x.y.z]`**，首版 `1.0.0`，与所属插件版本互不换算
-- **不加 `model` / `effort` / `maxTurns`**：Claude 侧独有，加入即产生两侧不对等
+- ⚠️ **不写 `license`**：官方插件 agent 的合法字段清单共 11 项——`name`、`description`、`model`、`effort`、`maxTurns`、`tools`、`disallowedTools`、`skills`、`memory`、`background`、`isolation`，**不含 `license`**（它只是 `plugin.json` 的顶层字段）。官方 `dotnet-diag` 的 agent 写了 `license: MIT` 属越界，只是 `validate` 不检查未知键而已——不跟随该处实践
+- **不加 `metadata.version`**：同一份清单里**也不含 `metadata`**（与 skill 不同——skill 有 agentskills.io 规范明确留出的 `metadata` 自由映射）。官方只文档化了「整个 YAML 解析失败」的行为，**未说明**「能解析但多出未知键」会怎样，不拿未知键去赌。**agent 版本号记在 `agent-docs/dotnet-diagnose/CHANGELOG.md` 的最新 `## [x.y.z]`**，首版 `1.0.0`，与所属插件版本互不换算
+- **不加 `model` / `effort` / `maxTurns` / `disallowedTools` / `skills` / `memory` / `background` / `isolation`**：这 8 项虽在官方合法清单内，但均为 Claude 侧独有，写了即产生两侧能力不对等
 
 ### 8.3 description 须写明划界
 
@@ -427,13 +441,13 @@ description 是两侧唯一的触发匹配依据，必须显式写清与官方 `
 
 | 文件 | 改动 | 不改的后果 |
 |---|---|---|
-| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | `version` `1.0.0` → **`1.1.0`**（Minor，新增 agent + skill）；增补 `"agents": ["./agents/dotnet-diagnose.agent.md"]` | 「功能变了版本号不变 = 不完整交付」；不声明 `agents` 则失去 replaces 语义的防假 agent 保护 |
+| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | `version` `1.0.0` → **`1.1.0`**（Minor，新增 agent + skill）；增补 `"agents": ["./agents/dotnet-diagnose.md"]` | 「功能变了版本号不变 = 不完整交付」；`agents` 是官方 replaces 语义，声明后默认目录不再扫描，路径与实际文件不符则 agent 加载不到 |
 | `plugins/optimus-devops-plugin/.codex-plugin/plugin.json` | `version` **同一次改动内一起升到 `1.1.0`**（与上一行同值，无先后主从）；`description` 与 `interface.longDescription` 两处同步；`interface.capabilities` 由 `["Skills"]` 增补 agent 能力（**须先验证该取值合法，不合法则不改此项**） | 两份不同值会被 `commit-cc-plugin` 的同值校验阻断 |
 | `.claude-plugin/marketplace.json` | **顶层 `version` 保持 `14.0.0` 不动**；只改 `optimus-devops-plugin` 的 `description` 加入诊断能力 | 顶层仅在增删插件时升——本次是给已有插件加内容，不改集合构成；description 不改则用户看不到该能力 |
 | `knowledge-base/catalog.json` | `dotnet-debugging` 的 `consumers` 由 `[]` 改为 `["plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage"]`（**登记 skill 层而非 agent 层**——判据引用全部落在 skill 与其 `references/` 中，agent 只负责调度）；`reviewed_at` 更新 | 领域首个消费者未登记 |
 | `knowledge-base/dotnet-debugging/README.md` | 「适用范围与读者」段的「本领域一期无固定 skill 消费者」改为指向本 agent | 该句已过时，属陈述性错误 |
-| `AGENTS.md` | ✅ **已完成**（本 spec 撰写期间同步补入）：① 版本管理表「新增 skill/agent/hook/command」；② darwin-skill 门禁只约束 skill 的说明；③ Skill 分层节点出 agent 为第三种产物形态并指向细则 | 本仓首个 agent 无规范可依，后续 agent 各行其是 |
-| `.claude/rules/agent-conventions.md` | ✅ **已完成**（由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付）：agent 规范已从 `skill-conventions.md` 拆出为独立文件，`paths` 为 `plugins/*/agents/*.md` 与 `plugins/*/agents/**/*.md` 两条（用 `*.md` 而非 `*.agent.md`，纯 `.md` 的 agent 也能命中；两条并存是因为平铺文件在严格 `**` 语义下不匹配单条 `**/*.md`）；含选型判据、`agents/` 目录硬约束、frontmatter、配套文档位置、独立版本化、darwin-skill 豁免 | 同上 |
+| `AGENTS.md` | ⚠️ **需按本 spec 修正一处**：L28 产物形态段的 `plugins/*/agents/<name>.agent.md` 改为 `<name>.md`（其余内容已由 `2026-09-06` 那份规范整节重写，正确） | 入口文档的命名示例若留着双扩展名，后续 agent 会照抄 |
+| `.claude/rules/agent-conventions.md` | ⚠️ **需按本 spec 的实测结论修正**（现文由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付，其中三处前提与官方文档/实测不符）：① 命名从 `<name>.agent.md` 改为纯 `<name>.md`；② frontmatter 示例删去 `license`（不在官方 11 字段清单内）；③ 「禁止辅助文件」的论证改为「解析失败是静默降级、文件名当 name」而非「产生假 agent」。`paths` 两条 glob 不变（已能命中纯 `.md`） | 本仓首个 agent 若按现文实施，会用无官方依据的双扩展名与越界字段 |
 | `.claude/skills/knowledge-base-maintain/scripts/check_refs.py` | `CONSUMER_GLOBS` 增 `plugins/*/skills/*/references/*.md` 一行 | 见下 |
 
 **`check_refs.py` 覆盖面（实测）**：现有 `CONSUMER_GLOBS` 四条为 `plugins/*/skills/*/SKILL.md`、`plugins/*/skills/*/*REFERENCE*.md`、`knowledge-base/*/rules/*.md`、`knowledge-base/*/reference/*.md`。
@@ -442,7 +456,7 @@ description 是两侧唯一的触发匹配依据，必须显式写清与官方 `
 |---|---|
 | `skills/dotnet-diagnose-triage/SKILL.md` | ✅ **自动覆盖**（命中第一条 glob）——这是改为两层结构的一个附带收益：agent 单层方案下判据引用全在 `agents/` 里，脚本一条都查不到 |
 | `skills/dotnet-diagnose-triage/references/*.md` | ❌ 不覆盖（第二条 glob 是同级 `*REFERENCE*.md`，不含子目录）。**而这三个文件恰是 anchor 密度最高的**（征象映射表逐条挂 anchor），因此补 glob 一行 |
-| `agents/dotnet-diagnose.agent.md` | ❌ 不覆盖，**且不补**——agent 层按 § 2.1 只写编排，不含 `file § anchor` 引用，无可查对象。若日后 agent 正文出现 anchor，说明分层被破坏，该由 § 10.2 的「判据表不出现在 agent 内」一项拦住 |
+| `agents/dotnet-diagnose.md` | ❌ 不覆盖，**且不补**——agent 层按 § 2.1 只写编排，不含 `file § anchor` 引用，无可查对象。若日后 agent 正文出现 anchor，说明分层被破坏，该由 § 10.2 的「判据表不出现在 agent 内」一项拦住 |
 
 补 glob 属 `.claude/` 下改动，**不升版本号**（AGENTS.md 版本管理表第一行）。改动后须回归跑一次全库 `check_refs.py`，确认新纳入的 glob 未让既有文件报错。
 
@@ -456,7 +470,7 @@ AGENTS.md 的版本管理节已由 `2026-09-06-rules-split-and-agent-docs-design
 
 | 层 | darwin-skill | 依据 |
 |---|---|---|
-| `agents/dotnet-diagnose.agent.md` | **不跑**，按 § 10 验收清单人工核验 | rubric 无对应维度 |
+| `agents/dotnet-diagnose.md` | **不跑**，按 § 10 验收清单人工核验 | rubric 无对应维度 |
 | `skills/dotnet-diagnose-triage/` | **必须跑基线评估**，结果记入 `known-issues.md`（含评分依据与评估模式 `full_test`/`dry_run`） | 新建 skill，按 `knowledge-base/skill-authoring/rules/06-continuous-improvement.md § 1. 创建后强制基线评估` |
 
 新建 skill 无「改动前分数」可比，因此不设通过门槛；但基线分过低（rubric 明显缺项）时先修再提交。
@@ -519,7 +533,7 @@ AGENTS.md 的版本管理节已由 `2026-09-06-rules-split-and-agent-docs-design
 
 ### 10.2 agent 层（编排）
 
-- [ ] `agents/dotnet-diagnose.agent.md` 交付，frontmatter 仅 `name`/`description`/`tools`/`license` 四字段
+- [ ] `agents/dotnet-diagnose.md` 交付（**纯 `.md`，非 `.agent.md`**），frontmatter 仅 `name`/`description`/`tools` 三字段——**不含 `license`**（不在官方 11 字段清单内）
 - [ ] 正文 **≤ 80 行**，只含三步主干、加载 skill 时机、边界、输出格式、免责声明——判据表不出现在 agent 内
 - [ ] `tools` 含 skill 加载能力（`'skill'` / `'Skill'`），**不含任何写入 / 执行类工具**
 - [ ] 输出末尾固定含台账交接块与「继续排查请把台账连同新证据一并提供」（§ 2.4）
@@ -527,9 +541,14 @@ AGENTS.md 的版本管理节已由 `2026-09-06-rules-split-and-agent-docs-design
 - [ ] description 含与官方 `dump-collect` / `dotnet-trace-collect` 的划界句
 - [ ] `agent-docs/dotnet-diagnose/CHANGELOG.md` 初始 `[1.0.0]`；`README.md` 六章节齐备，「所处层级」按与相邻产物的划界画图（非 category 层级图）、「触发词」为调用方式与触发面
 - [ ] README 头部的版本号与 `agent-docs/dotnet-diagnose/CHANGELOG.md` 最新条目**一致**
-- [ ] `agents/` 目录下**只有** `dotnet-diagnose.agent.md` 一个文件，无 CHANGELOG / README / 任何辅助文件（否则会注册成假 agent）
-- [ ] `.claude-plugin/plugin.json` 已含 `"agents": ["./agents/dotnet-diagnose.agent.md"]`，且原有 `name` / `version` 未被覆盖
-- [ ] `claude plugin validate ./plugins/optimus-devops-plugin` 通过——**必查项**：frontmatter 解析失败是静默降级而非报错，肉眼看不出
+- [ ] `agents/` 目录下**只有** `dotnet-diagnose.md` 一个文件，无 CHANGELOG / README / 任何辅助文件——本次已显式声明 `agents`（replaces 语义，默认目录不再扫描），但保持目录干净仍是硬要求：声明一旦被后人改回默认扫描，辅助文件会被当作 agent 加载（frontmatter 无 `name` 时用文件名当 agent 名）
+- [ ] `.claude-plugin/plugin.json` 已含 `"agents": ["./agents/dotnet-diagnose.md"]`，路径与实际文件名**逐字一致**，且原有 `name` / `version` 未被覆盖
+- [ ] `claude plugin validate ./plugins/optimus-devops-plugin` 通过——它校验 manifest 结构、`agents` 路径存在性、**以及 agent frontmatter 能否解析**。⚠️ 但 YAML 容错很强（`tools: [unclosed` 会被解析成合法值），**通过不等于字段写对了**，字段清单须人工核对 § 8.2
+- [ ] 🔴 **agent 真实加载核验（必查项，不可用 `plugin details` 代替）**：
+  ```bash
+  claude --plugin-dir ./plugins/optimus-devops-plugin -p "列出你可用的、名字含 dotnet 的 agent，只输出 agent 名"
+  ```
+  须输出 `optimus-devops-plugin:dotnet-diagnose`。⚠️ **`claude plugin details` 的 Agents 列在声明 `agents` 字段时统计为 0（实测缺陷，官方 `dotnet-diag` 同现象），且显示的是文件名而非注册名——不能用它判断加载成功**
 
 ### 10.3 skill 层（承载）
 
