@@ -118,7 +118,17 @@
       "status": "active",
       "consumers": ["plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage"],
       "reviewed_at": "2026-09-06",
-      "notes": "事后诊断与定位：征象判据、CLR 可观测结构、dump 抓取与分析命令、SOS 输出解读。覆盖 .NET Framework 4.x / .NET 6+ / Linux 容器三运行时的共性层；预防性编码规范归 csharp 与 wpf，平台生命周期归 dotnet。含活体监控工具链（EventPipe / dotnet-counters / dotnet-trace，仅 .NET 5+）与 WPF 专属归因分支（Dispatcher 死锁、四类泄漏形态，仅 Windows）；暂不含 PerfView/ETW"
+      "notes": "事后诊断与定位：征象判据、CLR 可观测结构、dump 抓取与分析命令、SOS 输出解读。覆盖 .NET Framework 4.x / .NET 6+ / Linux 容器三运行时的共性层；预防性编码规范归 csharp 与 wpf，平台生命周期归 dotnet。含活体监控工具链（EventPipe / dotnet-counters / dotnet-trace，仅 .NET 5+）与 WPF 专属归因分支（Dispatcher 死锁、四类泄漏形态，仅 Windows）；暂不含 PerfView/ETW。进程外部环境故障（模块注入、安全软件拦截、网络、硬件）归 host-diagnostics"
+    },
+    {
+      "domain": "host-diagnostics",
+      "title": "宿主进程环境诊断",
+      "categories": ["rules", "reference"],
+      "owner": "desktop client team",
+      "status": "active",
+      "consumers": [],
+      "reviewed_at": "2026-09-06",
+      "notes": "诊断宿主进程外部故障源：第三方模块注入、安全软件拦截、网络不通、硬件资源不足、系统环境劫持。与 dotnet-debugging 互补——后者负责进程内部（托管堆/线程/锁）取证，本领域负责进程外部环境。目标工具为 .NET 8+ / .NET Framework 4.6.2+ 的 Windows 桌面程序。核心约束「知识库给方法，不给名单」：不内置具体产品黑名单，只收判断框架与冲突形态。⚠️ reference/aha-doctor-teardown.md 为第三方商业软件（字节跳动 AHA 电脑医生）的只读静态分析，基于 2026-09-06 本机快照；仅含公开可读配置与文件元数据层面的观察，未反编译二进制、未解密受保护规则包。其中【推断】标记内容不得作为判据依据引用"
     }
   ]
 }
