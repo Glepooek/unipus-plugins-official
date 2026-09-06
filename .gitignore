@@ -435,7 +435,3 @@ FodyWeavers.xsd
 # Python bytecode cache
 __pycache__/
 *.py[cod]
-
-# tips.txt → tips.jsonl 迁移（2026-09-04）的本地对照副本
-# 旧格式已由 git 历史完整保存，无需再入版本库
-plugins/optimus-devops-plugin/hooks/sessionstart/tips.txt.bak
