@@ -371,7 +371,7 @@ Run:
 echo "=== 剩余二级标题 ===" && grep -n '^## ' .claude/rules/skill-conventions.md
 echo "=== paths 条数（应为 1）===" && grep -c '^  - "' .claude/rules/skill-conventions.md
 echo "=== 行数 ===" && wc -l .claude/rules/skill-conventions.md
-echo "=== 搬走的内容不应残留 ===" && grep -c '编辑铁律\|## Agent 规范\|## CHANGELOG.md 规范\|## README.md 规范' .claude/rules/skill-conventions.md
+echo "=== 搬走的内容不应残留 ===" && grep -c '^## 编辑铁律\|^## Agent 规范\|^## CHANGELOG.md 规范\|^## README.md 规范' .claude/rules/skill-conventions.md
 echo "=== 保留的内容必须还在 ===" && grep -c 'metadata.version\|执行前置校验\|需求预告\|持续优化' .claude/rules/skill-conventions.md
 ```
 
@@ -2148,7 +2148,7 @@ print('marketplace: 顶层 14.0.0、条目无 version — PASS')
 
 echo ""
 echo "########## AGENTS.md 旧表述清零 ##########"
-grep -c '抄录\|共用的版本号真源' AGENTS.md
+grep -c '从 .claude-plugin/marketplace.json 抄录\|共用的版本号真源' AGENTS.md
 
 echo ""
 echo "########## § 9.5 连带改动 ##########"

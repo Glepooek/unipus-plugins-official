@@ -48,7 +48,7 @@ Python 脚本单元测试（**本机无 `pytest`，只能用 `unittest`**）：
 ```bash
 # 维护型 skill（各自独立跑，unittest discover 不递归跨目录）
 python -m unittest discover -s .claude/skills/sync-cc-docs-to-youdaonote/scripts -p "test_*.py"  # 77 tests
-python -m unittest discover -s .claude/skills/knowledge-base-maintain/scripts -p "test_*.py"     # 139 tests
+python -m unittest discover -s .claude/skills/knowledge-base-maintain/scripts -p "test_*.py"     # 141 tests
 python -m unittest discover -s .claude/skills/sync-cc-tips/scripts -p "test_*.py"                # 46 tests
 ```
 
