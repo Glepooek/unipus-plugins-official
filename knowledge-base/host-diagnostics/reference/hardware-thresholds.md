@@ -176,7 +176,7 @@
 | 原因 | 判定方式 |
 |---|---|
 | 驱动过旧或不支持所需特性 | 查驱动版本与日期 |
-| 远程桌面 / VDI 会话 | 见 `vdi-environment.md` |
+| 远程桌面 / VDI 会话 | 检出会话类型（`cli-process-toolbox.md § 7.5`）；⚠️ **VDI 环境的判据本领域未覆盖**，见 `symptom-routing.md § 8` |
 | 注册表或组策略禁用 | 见 `system-environment-hijack.md § 3`（`DISABLEDWM`） |
 | 第三方软件干扰渲染链 | 见 `module-injection.md § 4.1` |
 | 虚拟机无 GPU 直通 | 环境判定 |
@@ -270,5 +270,6 @@
 | 目标进程 CPU 单核跑满且无响应 | 同上 |
 | 硬件加速被注册表禁用 | `system-environment-hijack.md § 3` |
 | 渲染链疑似被第三方干扰 | `module-injection.md § 4.1` |
-| VDI 环境下判据失效 | `vdi-environment.md` |
+| VDI 环境下判据失效 | ⚠️ **本领域未覆盖**（缺实测素材）——见 `symptom-routing.md § 8`。须如实告知无法判定，不得凭现象猜结论 |
 | 需要采集实现 | `dotnet-probing-techniques.md` |
+| **需要具体敲什么命令** | `cli-process-toolbox.md § 7`。⚠️ 该篇有意不给阈值数值（沿用 § 1 的可调参数原则）；§ 5.1 的**渲染层级**与 § 6 的**指令集特性位**在命令行侧不可得，只能采回退成因与 CPU 型号 |

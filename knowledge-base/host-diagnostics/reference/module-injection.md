@@ -200,7 +200,7 @@ WPF 的渲染路径（Media Integration Layer → DirectX → DWM）比传统 GD
 
 其余三种手段都只能降低或提高可疑度，不能定案。这是本篇结论强度基线的直接后果。
 
-⚠️ 但停用操作**属于系统修改**，不在诊断阶段的职责内——诊断工具应给出建议，由用户决策执行。见 `rules/01-diagnostic-safety.md § 1 只读优先`（待产出）。
+⚠️ 但停用操作**属于系统修改**，不在诊断阶段的职责内——诊断工具应给出建议，由用户决策执行。见 `rules/01-diagnostic-safety.md § 1 只读优先`。
 
 ### 5.2 排除的记录价值
 
@@ -287,4 +287,5 @@ aha_doctor 的做法印证了这一点：它把规则放在独立的加密数据
 | 模块全部排除但现象仍在 | `symptom-routing.md` 的下一优先级 |
 | 确认故障在进程内部 | `symptom-routing.md § 6.1` → `dotnet-debugging` |
 | 需要枚举与验签的具体实现 | `dotnet-probing-techniques.md` |
+| **需要具体敲什么命令** | `cli-process-toolbox.md § 3`（枚举分类）、`§ 4`（验签与 DLL 劫持）。⚠️ 该篇 § 3.5 说明：**§ 2 权重最高的「加载方式」维度在命令行侧不可得**，须靠 `§ 6.6` 的注册表交叉验证补偿 |
 

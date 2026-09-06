@@ -222,3 +222,4 @@ Windows 过滤平台承载防火墙与第三方网络过滤。枚举已注册的
 | 网络被拦截，需定位在哪一层 | `network-layered-probe.md § 7` |
 | 文件被隔离导致启动失败 | `symptom-routing.md § 2` |
 | 需要枚举与查询的具体实现 | `dotnet-probing-techniques.md` |
+| **需要具体敲什么命令** | `cli-process-toolbox.md § 5`。⚠️ 该篇 § 5.5 给出 § 3.1「查不到拦了什么」的**两个例外**（Defender 检测历史、防火墙 5157 审计事件），但只覆盖 Windows 自带组件，不改变本篇结论；§ 1.3 的 WFP 枚举在命令行侧不可得 |

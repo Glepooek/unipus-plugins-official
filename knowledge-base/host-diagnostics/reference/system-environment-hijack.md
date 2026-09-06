@@ -350,5 +350,6 @@ HKLM\SOFTWARE\Classes\CLSID\<CLSID>\InprocServer32
 | 检出 AppInit_DLLs 有内容，需判断具体模块 | `reference/module-injection.md` |
 | 检出配置疑似安全软件所设 | `reference/security-software.md` |
 | 需要具体的注册表读取实现 | `reference/dotnet-probing-techniques.md` |
+| **需要具体敲什么命令** | `reference/cli-process-toolbox.md § 6`——五个检测点的 `reg query` 与 PowerShell 双栏命令、判定顺序，及 `§ 6.6` 与模块列表的交叉验证 |
 | 五项全部正常但现象仍在 | `reference/symptom-routing.md` 的下一优先级 |
 

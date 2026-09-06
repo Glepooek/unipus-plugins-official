@@ -73,7 +73,7 @@
 
 **【实测】** 这条要求与 PE 清单一致——`aha_doctor.exe` 与 `task_host.exe` 的清单均为 `asInvoker`，**不会自动弹 UAC**。因此提权必须由用户在启动时手动完成，或由程序在运行时按需发起（主程序持有 `CreateProcessWithTokenW` + `runas` 相关能力）。
 
-> **对本领域的启示**：诊断工具的提权模型是一个必须显式设计的决策点，不能默认「反正要管理员权限」。见 `rules/01-diagnostic-safety.md § 3 提权最小化`（待产出）。
+> **对本领域的启示**：诊断工具的提权模型是一个必须显式设计的决策点，不能默认「反正要管理员权限」。见 `rules/01-diagnostic-safety.md § 3 提权最小化`。
 
 ### 1.2 界面语言
 
@@ -98,7 +98,7 @@
 
 > **【官方】关键根因判断**：白屏/卡顿类现象**通常是第三方软件引起飞书功能异常**。
 >
-> 这是官方给出的根因排序依据，也解释了为什么「三方模块检测」是整个工具里唯一带干预动作的模块。**本领域的现象反查表据此排序**——见 `reference/symptom-routing.md`（待产出）。
+> 这是官方给出的根因排序依据，也解释了为什么「三方模块检测」是整个工具里唯一带干预动作的模块。**本领域的现象反查表据此排序**——见 `reference/symptom-routing.md`。
 
 ### 2.2 实测的完整功能面
 
@@ -120,12 +120,12 @@
 | **安全软件检测** | 已安装安全软件；防火墙状态（域/专用/公用三种配置文件分别判） | `security-software.md` |
 | **网络检测** | 6 个可折叠分区：防火墙检测、网络硬件信息、网络协议栈、网络配置数据（本机 IP/DNS/公网 IP/hosts 异常）、网络访问情况（链路/延迟/IP/城市/LSP/分析/结果 七列）、代理检测 | `network-layered-probe.md` |
 | **硬件检测** | CPU/内存/虚拟内存/磁盘使用率/磁盘容量/是否 SSD/GPU，各带阈值；硬件加速开关；CPU 型号兼容性 | `hardware-thresholds.md` |
-| **VDI 环境检测** | 磁盘读取速度、传输协议 —— 专为虚拟桌面场景 | `vdi-environment.md`（可选） |
+| **VDI 环境检测** | 磁盘读取速度、传输协议 —— 专为虚拟桌面场景 | ⚠️ **本领域有意未覆盖**（缺实测素材），见 `symptom-routing.md § 8` |
 | **系统环境检测** | IFEO 调试器劫持、GlobalFlag、AppCompat 兼容模式、URL 协议注册是否正常 | `system-environment-hijack.md` |
 
 **结果模型**：走**风险计数**而非通过/失败——`共发现 {:d} 项风险信息` / `暂未发现问题`，并记录上次诊断时间。结果可通过「发送给{宿主}」回传给宿主应用。
 
-> **对本领域的启示**：风险计数模型对用户友好，但容易让人把「检出 47 个第三方模块」读成「有 47 个问题」。见 `rules/03-conclusion-strength.md § 4 风险计数不是故障计数`（待产出）。
+> **对本领域的启示**：风险计数模型对用户友好，但容易让人把「检出 47 个第三方模块」读成「有 47 个问题」。见 `rules/03-conclusion-strength.md § 4 风险计数不是故障计数`。
 
 ---
 
@@ -165,7 +165,7 @@
 
 **为什么这么做**：WMI 慢、依赖 WMI 服务自身健康、在故障机器上本身就可能查不动——而这工具面对的恰恰是故障机器。
 
-> **对本领域的启示（本文最重要的一条实现经验）**：诊断工具的取证手段必须在故障机器上仍能工作。C# 侧 WMI 是最顺手的路径，但也最容易挂住，须有超时与兜底。见 `rules/02-evidence-standards.md § 3 故障机器上的降级` 与 `reference/dotnet-probing-techniques.md § 2 WMI 的权衡`（均待产出）。
+> **对本领域的启示（本文最重要的一条实现经验）**：诊断工具的取证手段必须在故障机器上仍能工作。C# 侧 WMI 是最顺手的路径，但也最容易挂住，须有超时与兜底。见 `rules/02-evidence-standards.md § 3 故障机器上的降级` 与 `reference/dotnet-probing-techniques.md § 2 WMI 的权衡`。
 
 ### 3.3 三个具体实现细节
 
@@ -249,7 +249,7 @@
 2. **仅配置中登记的宿主应用**——换个应用它不知道该查哪个进程、探哪些域名
 3. **「网络能不能通」是按宿主服务域名判的**，不是判「你能不能上网」
 
-> 第 3 条是重要判据：**域名可达性 ≠ 能上网**。见 `reference/network-layered-probe.md`（待产出）。
+> 第 3 条是重要判据：**域名可达性 ≠ 能上网**。见 `reference/network-layered-probe.md`。
 
 ### 4.3 它明确不做的事
 
@@ -257,7 +257,7 @@
 
 唯一例外是三方模块的「屏蔽」，见 § 6.2。
 
-> **对本领域的启示**：**诊断与修复分离**是正确的产品边界。见 `rules/01-diagnostic-safety.md § 1 只读优先`（待产出）。
+> **对本领域的启示**：**诊断与修复分离**是正确的产品边界。见 `rules/01-diagnostic-safety.md § 1 只读优先`。
 
 ---
 
@@ -271,7 +271,7 @@ PE 里存在 **`.detourc` / `.detourd` 节**——Microsoft Detours 的特征节
 
 佐证：`dnsapi.dll` 出现在字符串里但**不在导入表中**，配合源码路径 `monitor_dns_imp.cc` / `monitor_clipboard_imp.cc` / `monitor_raw_input_imp.cc`，说明 DNS 解析监控、剪贴板监控、键鼠监控走的是**运行时 API hook**，而非静态导入。
 
-> **对本领域的启示（明确不继承）**：本知识库**不收录 hook 手法**。理由：托管环境做进程内 hook 不稳、杀软误报率高，且 ETW 可替代（DNS 走 `Microsoft-Windows-DNS-Client` provider，剪贴板走 `AddClipboardFormatListener`，键鼠走 `SetWindowsHookEx`）。见 `rules/01-diagnostic-safety.md § 5 禁止进程内注入`（待产出）。
+> **对本领域的启示（明确不继承）**：本知识库**不收录 hook 手法**。理由：托管环境做进程内 hook 不稳、杀软误报率高，且 ETW 可替代（DNS 走 `Microsoft-Windows-DNS-Client` provider，剪贴板走 `AddClipboardFormatListener`，键鼠走 `SetWindowsHookEx`）。见 `rules/01-diagnostic-safety.md § 5 禁止进程内注入`。
 
 ### 5.2 唯一的系统写操作
 
@@ -295,7 +295,7 @@ PE 里存在 **`.detourc` / `.detourd` 节**——Microsoft Detours 的特征节
 | 数据保留策略、隐私边界 | 官方文档未涉及，静态不可见 |
 | 实际运行时的标签页划分 | 主题目录与官方描述不完全对应，需运行确认 |
 
-> **这张表直接决定了本领域的两条约束**：① 不内置产品黑名单（规则内容未知）；② 硬件阈值须自定并标注依据（原阈值未知）。见领域 README 与 `reference/hardware-thresholds.md`（待产出）。
+> **这张表直接决定了本领域的两条约束**：① 不内置产品黑名单（规则内容未知）；② 硬件阈值须自定并标注依据（原阈值未知）。见领域 README 与 `reference/hardware-thresholds.md`。
 
 ---
 
