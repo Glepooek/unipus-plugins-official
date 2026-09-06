@@ -100,8 +100,8 @@ agent 无跨调用状态，因此**台账的延续必须由输出自身携带**�
 
 | 维度 | Claude Code | Codex |
 |---|---|---|
-| agent 目录 | 插件根 `agents/`，自动发现，无需在 manifest 声明 | 插件根 `agents/`（官方 `dotnet-diag/0.1.0/agents/` 实证） |
-| 文件命名 | 无强制规则，`name` 字段优先，文件名为 fallback | `*.agent.md`（官方实践） |
+| agent 目录 | 插件根 `agents/`，**必须在 `.claude-plugin/plugin.json` 显式声明 `agents` 文件路径数组**（该字段是 replaces 语义，取代默认扫描） | 插件根 `agents/`（官方 `dotnet-diag/0.1.0/agents/` 实证） |
+| 文件命名 | 无强制规则，`name` 字段优先，文件名为 fallback。⚠️ `.agent.md` 双扩展名来自 **VS Code / Copilot 约定，非 Claude Code 官方**（官方示例为纯 `.md`），沿用它是跟随微软 `dotnet/skills` 实践 | `*.agent.md`（官方实践） |
 | agent 调 skill | `Skill` 工具 | `skill` 工具（官方 agent 的 `tools` 实证含 `'skill'`） |
 | 子代理能力 | Agent 工具 | subagents 2026-03-14 GA，manager-worker，最多 8 并行 |
 
@@ -376,7 +376,10 @@ AGENTS.md 要求新产物自检「引导器 / 传感器」配对。本 agent 是
 
 | 文件 | 内容 | 适用规范 |
 |---|---|---|
-| `plugins/optimus-devops-plugin/agents/dotnet-diagnose.agent.md` | 编排层：三步主干、加载 skill 时机、边界、输出格式（含台账交接块）、免责声明。**≤ 80 行** | agent 规范（四字段，无 CHANGELOG/README） |
+| `plugins/optimus-devops-plugin/agents/dotnet-diagnose.agent.md` | 编排层：三步主干、加载 skill 时机、边界、输出格式（含台账交接块）、免责声明。**≤ 80 行** | `.claude/rules/agent-conventions.md`（四字段 frontmatter，**有 CHANGELOG/README，位置在 `agent-docs/`**） |
+| `plugins/optimus-devops-plugin/agent-docs/dotnet-diagnose/CHANGELOG.md` | 初始 `[1.0.0]` — **agent 版本号真源** | `.claude/rules/doc-conventions.md` |
+| `plugins/optimus-devops-plugin/agent-docs/dotnet-diagnose/README.md` | 六章节，其中「所处层级」按与相邻产物的划界画图、「触发词」改为调用方式与触发面 | `.claude/rules/doc-conventions.md`（agent 分栏） |
+| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | **已在本次规范实施时新建**（`name` + `version`）；本次只需**增补** `"agents": ["./agents/dotnet-diagnose.agent.md"]` | `.claude/rules/agent-conventions.md` |
 | `plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage/SKILL.md` | 承载层主干：台账规则（含跨轮续用）、自检四项、三结论强度、九条失败处理、交接表、合规约束 | **skill 完整规范**（六字段 + metadata.version 1.0.0） |
 | `.../skills/dotnet-diagnose-triage/references/symptom-hypothesis-map.md` | 征象映射表（8 类 × 合并候选集）+ 二维路由表 + 第二跳去向清单 | — |
 | `.../skills/dotnet-diagnose-triage/references/evidence-precheck.md` | B 组三项证据可用性校验 + 崩溃日志定位与区分线 | — |
@@ -386,7 +389,7 @@ AGENTS.md 要求新产物自检「引导器 / 传感器」配对。本 agent 是
 | `.../skills/dotnet-diagnose-triage/known-issues.md` | darwin-skill 基线评估记录（含评分依据与评估模式） | 持续优化机制（2026-08-30 起新建 skill 适用） |
 | `.../skills/dotnet-diagnose-triage/test-cases/golden.md` | 七个黄金测例（见 § 9） | 本 spec 自行引入 |
 
-**结构变化的连带后果**：skill 层回归 skill 的完整规范，因此 CHANGELOG / README / known-issues / **darwin-skill 基线评估**全部适用——这与只建 agent 时的豁免（§ 8.5）不同。agent 层仍豁免。
+**结构变化的连带后果**：skill 层回归 skill 的完整规范，因此 CHANGELOG / README / known-issues / **darwin-skill 基线评估**全部适用。**agent 层的豁免范围已收窄**：CHANGELOG / README **不再豁免**（位置在 `agent-docs/dotnet-diagnose/`），仅 `known-issues.md` 与 darwin-skill 评分门禁仍豁免（§ 8.5）。
 
 ### 8.2 frontmatter 规格
 
@@ -404,7 +407,7 @@ license: MIT
 - **`tools` 必须含 skill 加载能力**（`'skill'` / `'Skill'`）——承载层在 skill 里，无此能力则 agent 读不到判据表（官方 `optimizing-dotnet-performance.agent.md` 同理列了 `'task'`、`'skill'`）
 - **不含任何写入或执行工具**：收窄后不执行命令、不修改文件。**因此台账不落文件，只能靠输出自带交接块跟轮**（§ 2.4）
 - **`tools` 列跨 harness 别名**：官方做法，同一能力两侧工具名不同
-- **不加 `metadata.version`**：Claude 侧插件 agent 的 frontmatter 容错是静默降级（解析失败则全部字段被忽略），加入两侧未共同验证的字段有风险；版本由 marketplace 统一管理
+- **不加 `metadata.version`**：插件 agent 的 11 个合法字段里**不含 `metadata`**（与 skill 不同——skill 有 agentskills.io 规范明确留出的 `metadata` 自由映射）；且 Claude 侧 frontmatter 容错是静默降级（解析失败则全部字段被忽略），加未知键是在赌文档空白。**agent 版本号记在 `agent-docs/dotnet-diagnose/CHANGELOG.md` 的最新 `## [x.y.z]`**，首版 `1.0.0`，与所属插件版本互不换算
 - **不加 `model` / `effort` / `maxTurns`**：Claude 侧独有，加入即产生两侧不对等
 
 ### 8.3 description 须写明划界
@@ -424,12 +427,13 @@ description 是两侧唯一的触发匹配依据，必须显式写清与官方 `
 
 | 文件 | 改动 | 不改的后果 |
 |---|---|---|
-| `.claude-plugin/marketplace.json` | 顶层 `version` 14.0.0 → **14.1.0**；`optimus-devops-plugin` 的 `description` 加入诊断能力 | 「功能变了版本号不变 = 不完整交付」；description 不改则用户看不到该能力 |
-| `plugins/optimus-devops-plugin/.codex-plugin/plugin.json` | `version` 同步 14.1.0；`description` 与 `interface.longDescription` 两处同步；`interface.capabilities` 由 `["Skills"]` 增补 agent 能力（**须先验证该取值合法，不合法则不改此项**） | version 从 marketplace 抄录，不同步即失真 |
+| `plugins/optimus-devops-plugin/.claude-plugin/plugin.json` | `version` `1.0.0` → **`1.1.0`**（Minor，新增 agent + skill）；增补 `"agents": ["./agents/dotnet-diagnose.agent.md"]` | 「功能变了版本号不变 = 不完整交付」；不声明 `agents` 则失去 replaces 语义的防假 agent 保护 |
+| `plugins/optimus-devops-plugin/.codex-plugin/plugin.json` | `version` **同一次改动内一起升到 `1.1.0`**（与上一行同值，无先后主从）；`description` 与 `interface.longDescription` 两处同步；`interface.capabilities` 由 `["Skills"]` 增补 agent 能力（**须先验证该取值合法，不合法则不改此项**） | 两份不同值会被 `commit-cc-plugin` 的同值校验阻断 |
+| `.claude-plugin/marketplace.json` | **顶层 `version` 保持 `14.0.0` 不动**；只改 `optimus-devops-plugin` 的 `description` 加入诊断能力 | 顶层仅在增删插件时升——本次是给已有插件加内容，不改集合构成；description 不改则用户看不到该能力 |
 | `knowledge-base/catalog.json` | `dotnet-debugging` 的 `consumers` 由 `[]` 改为 `["plugins/optimus-devops-plugin/skills/dotnet-diagnose-triage"]`（**登记 skill 层而非 agent 层**——判据引用全部落在 skill 与其 `references/` 中，agent 只负责调度）；`reviewed_at` 更新 | 领域首个消费者未登记 |
 | `knowledge-base/dotnet-debugging/README.md` | 「适用范围与读者」段的「本领域一期无固定 skill 消费者」改为指向本 agent | 该句已过时，属陈述性错误 |
 | `AGENTS.md` | ✅ **已完成**（本 spec 撰写期间同步补入）：① 版本管理表「新增 skill/agent/hook/command」；② darwin-skill 门禁只约束 skill 的说明；③ Skill 分层节点出 agent 为第三种产物形态并指向细则 | 本仓首个 agent 无规范可依，后续 agent 各行其是 |
-| `.claude/rules/skill-conventions.md` | ✅ **已完成**：① `paths` 增 `plugins/*/agents/**/*.agent.md`（编辑 agent 文件时自动加载本规范）；② 新增「Agent 规范」节——选型判据、目录命名、四字段 frontmatter、`claude plugin validate` 强制校验、不适用的 skill 规范清单、版本管理 | 同上 |
+| `.claude/rules/agent-conventions.md` | ✅ **已完成**（由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付）：agent 规范已从 `skill-conventions.md` 拆出为独立文件，`paths` 为 `plugins/*/agents/*.md` 与 `plugins/*/agents/**/*.md` 两条（用 `*.md` 而非 `*.agent.md`，纯 `.md` 的 agent 也能命中；两条并存是因为平铺文件在严格 `**` 语义下不匹配单条 `**/*.md`）；含选型判据、`agents/` 目录硬约束、frontmatter、配套文档位置、独立版本化、darwin-skill 豁免 | 同上 |
 | `.claude/skills/knowledge-base-maintain/scripts/check_refs.py` | `CONSUMER_GLOBS` 增 `plugins/*/skills/*/references/*.md` 一行 | 见下 |
 
 **`check_refs.py` 覆盖面（实测）**：现有 `CONSUMER_GLOBS` 四条为 `plugins/*/skills/*/SKILL.md`、`plugins/*/skills/*/*REFERENCE*.md`、`knowledge-base/*/rules/*.md`、`knowledge-base/*/reference/*.md`。
@@ -444,9 +448,11 @@ description 是两侧唯一的触发匹配依据，必须显式写清与官方 `
 
 ### 8.5 版本升级的规范空白（已消除）与 darwin-skill 门禁的实际落点
 
-AGENTS.md 版本管理表原先列的是「新增 skill/hook/command」，未列 agent。本 spec 撰写期间已按语义补入 agent（「新增用户可见功能 → Minor」），并同步写明 `darwin-skill` 评分门禁只约束 skill——其 9 维 rubric 针对 SKILL.md 结构，对 agent 无对应维度。
+AGENTS.md 的版本管理节已由 `2026-09-06-rules-split-and-agent-docs-design.md` 整节重写：版本落点下移至每插件的两份 `plugin.json`，含「什么改动升哪一层」的触发矩阵；`darwin-skill` 评分门禁只约束 skill——其 9 维 rubric 针对 SKILL.md 结构，对 agent 无对应维度。
 
-**改为两层后，门禁并非整体豁免**，按层区分：
+**agent 层的豁免范围已收窄，须按项区分**：CHANGELOG / README **不再豁免**（`agent-conventions.md` 定为必须，位置在 `agent-docs/<name>/`），仅 `known-issues.md` 与 darwin-skill 评分门禁仍豁免——后者是因为 `known-issues.md` 本身就是 darwin-skill 循环的输入产物，两者同进同退。
+
+**darwin-skill 按层区分：**
 
 | 层 | darwin-skill | 依据 |
 |---|---|---|
@@ -519,6 +525,10 @@ AGENTS.md 版本管理表原先列的是「新增 skill/hook/command」，未列
 - [ ] 输出末尾固定含台账交接块与「继续排查请把台账连同新证据一并提供」（§ 2.4）
 - [ ] 结论免责声明已固定在输出末尾
 - [ ] description 含与官方 `dump-collect` / `dotnet-trace-collect` 的划界句
+- [ ] `agent-docs/dotnet-diagnose/CHANGELOG.md` 初始 `[1.0.0]`；`README.md` 六章节齐备，「所处层级」按与相邻产物的划界画图（非 category 层级图）、「触发词」为调用方式与触发面
+- [ ] README 头部的版本号与 `agent-docs/dotnet-diagnose/CHANGELOG.md` 最新条目**一致**
+- [ ] `agents/` 目录下**只有** `dotnet-diagnose.agent.md` 一个文件，无 CHANGELOG / README / 任何辅助文件（否则会注册成假 agent）
+- [ ] `.claude-plugin/plugin.json` 已含 `"agents": ["./agents/dotnet-diagnose.agent.md"]`，且原有 `name` / `version` 未被覆盖
 - [ ] `claude plugin validate ./plugins/optimus-devops-plugin` 通过——**必查项**：frontmatter 解析失败是静默降级而非报错，肉眼看不出
 
 ### 10.3 skill 层（承载）
@@ -543,9 +553,10 @@ AGENTS.md 版本管理表原先列的是「新增 skill/hook/command」，未列
 
 - [ ] `python .claude/skills/knowledge-base-maintain/scripts/check_index.py` PASS，条目数不变（全局 576 / 领域 74）
 - [ ] `check_refs.py` PASS（含新补的 `plugins/*/skills/*/references/*.md` glob，回归确认既有文件未被新 glob 带出报错）
-- [ ] marketplace 14.1.0 与 `.codex-plugin/plugin.json` 版本一致
+- [ ] devops 两份 `plugin.json`（`.claude-plugin/` 与 `.codex-plugin/`）版本**同值**且已升 **Minor**（新增 agent + skill）；`marketplace.json` 顶层 `version` **保持 `14.0.0` 未动**
+- [ ] `python .claude/skills/commit-cc-plugin/scripts/check_plugin_versions.py .` 通过（两份同值校验）
 - [ ] `catalog.json` consumers 已登记为 skill 层路径，JSON 可解析
-- [ ] AGENTS.md 与 `.claude/rules/skill-conventions.md` 的 agent 规范已补（✅ 撰写期间已完成，实施时只需复核未被回退）
+- [ ] `AGENTS.md` 与 `.claude/rules/agent-conventions.md` 的 agent 规范已就位（由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付，实施时只需复核未被回退）
 - [ ] 全部改动经 `commit-cc-plugin` 推送
 
 ## 11. 不在本次范围
