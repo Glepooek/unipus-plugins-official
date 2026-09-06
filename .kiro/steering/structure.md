@@ -70,6 +70,6 @@ plugins/{plugin-name}/
 | `.claude/skills/commit-cc-plugin/SKILL.md` | 提交发布工作流（强制使用） |
 | `.claude/skills/sync-cc-tips/SKILL.md` | tips 文件同步 Skill |
 | `plugins/optimus-devops-plugin/hooks/hooks.json` | Hooks 配置入口 |
-| `plugins/optimus-devops-plugin/hooks/sessionstart/tips.jsonl` | 276 条使用技巧 |
+| `plugins/optimus-devops-plugin/hooks/sessionstart/tips.jsonl` | 281 条使用技巧 |
 | `plugins/optimus-mcp-servers/.mcp.json` | MCP 服务器声明 |
 | `plugins/optimus-frontend-plugin/skills/optimus-fe-dev/ARCHITECTURE.md` | 复合 Skill 架构参考 |
