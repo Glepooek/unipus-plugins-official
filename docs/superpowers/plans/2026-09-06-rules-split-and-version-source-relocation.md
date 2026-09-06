@@ -85,7 +85,7 @@
 编辑 任意 CHANGELOG.md             → doc-conventions.md
 编辑 skills/**/README.md           → doc-conventions.md
 编辑 agent-docs/**/*.md            → doc-conventions.md
-编辑 agents/**/*.md                → agent-conventions.md
+编辑 agents/*.md                   → agent-conventions.md
 ```
 
 **核心收益**：现状下编辑任一 CHANGELOG（全仓 50+ 个）会注入 248 行，其中约 190 行无关；拆分后只注入 `doc-conventions.md` 的约 95 行且全部相关。
@@ -438,7 +438,7 @@ docs(rules): skill-conventions 瘦身，paths 收窄为单条 SKILL.md
 
 **Interfaces:**
 - Consumes: Task 1 的 `doc-conventions.md`（开头引用）、Task 2 已完成的删除（避免两处并存）
-- Produces: `.claude/rules/agent-conventions.md`，`paths` 为 `plugins/*/agents/**/*.md`。定义 `agent-docs/<name>/` 目录约定与 agent 版本号载体，**Task 6-7 与 dotnet-diagnose 实施都依赖本文件**
+- Produces: `.claude/rules/agent-conventions.md`，`paths` 为 `plugins/*/agents/*.md` 与 `plugins/*/agents/**/*.md` 两条。定义 `agent-docs/<name>/` 目录约定与 agent 版本号载体，**Task 6-7 与 dotnet-diagnose 实施都依赖本文件**
 
 ⚠️ **这不是原样搬迁**。原「Agent 规范」节有**四处必须改写**（spec § 5.2）与**三节必须新增**（spec § 5.3），下面逐步给出最终内容。
 
@@ -449,6 +449,7 @@ Create `.claude/rules/agent-conventions.md`：
 ````markdown
 ---
 paths:
+  - "plugins/*/agents/*.md"
   - "plugins/*/agents/**/*.md"
 ---
 
@@ -466,6 +467,8 @@ paths:
 ````
 
 ⚠️ **`paths` 用 `*.md` 而非 `*.agent.md`**（原 glob 是后者）。理由：若后续有人按 Claude Code 官方示例建纯 `.md` 的 agent，规范仍能自动加载；原 glob 会漏掉这种情形（spec § 4.1）。
+
+⚠️ **两条 glob 必须并存，不可只写 `**/*.md` 一条**。`agents/` 被 Step 2 硬约束为**平铺**，平铺文件的目录层数为零；而在严格 glob 语义下（如 Python `PurePath.match`）`**` 要求**至少一层**目录，单条 `plugins/*/agents/**/*.md` 对 `agents/y.agent.md` **不匹配**——规则文件将永不加载。第一条 `plugins/*/agents/*.md` 稳妥命中唯一合法形态（平铺），第二条保留对误放子目录情形的兜底覆盖。两种匹配语义下（`**` 可为零层 / 至少一层）本组合都成立。
 
 - [ ] **Step 2: 追加目录结构硬约束节（新增，spec § 5.3 ①）**
 
@@ -649,13 +652,14 @@ cases = {
     'plugins/optimus-devops-plugin/skills/x/CHANGELOG.md':    ['doc-conventions'],
     'plugins/optimus-devops-plugin/skills/x/README.md':       ['doc-conventions'],
     'plugins/optimus-devops-plugin/agents/y.agent.md':        ['agent-conventions'],
+    'plugins/optimus-devops-plugin/agents/y.md':              ['agent-conventions'],
     'plugins/optimus-devops-plugin/agent-docs/y/README.md':   ['doc-conventions'],
     'plugins/optimus-devops-plugin/agent-docs/y/CHANGELOG.md':['doc-conventions'],
 }
 globs = {
     'skill-conventions': ['**/SKILL.md'],
     'doc-conventions':   ['**/CHANGELOG.md','plugins/*/skills/**/README.md','plugins/*/agent-docs/**/*.md'],
-    'agent-conventions': ['plugins/*/agents/**/*.md'],
+    'agent-conventions': ['plugins/*/agents/*.md','plugins/*/agents/**/*.md'],
 }
 ok = True
 for path, expect in cases.items():
@@ -670,9 +674,11 @@ print('全部通过' if ok else '有不匹配项，见上面 FAIL 行')
 "
 ```
 
-Expected: 6 行全部 `OK`，末尾输出 `全部通过`。
+Expected: 7 行全部 `OK`，末尾输出 `全部通过`。
 
 ⚠️ 这一步是**本次拆分的核心验收**——它验证的正是 spec § 1.1 的驱动力（按动作精准加载）。若 `agent-docs/y/CHANGELOG.md` 同时命中 `doc-conventions` 的两条 glob，Python 的 `any()` 只返回一次，不算重叠，属正常。
+
+⚠️ **本步用 `PurePath.match`，与 Step 5 的 `Path.glob` 语义不同**：前者 `**` 要求至少一层目录，后者可为零层。两个平铺 agent 用例（`y.agent.md` / `y.md`）正是靠本步的严格语义才能暴露「单条 `**/*.md` 匹配不到平铺文件」——**不要因为 Step 5 已通过就跳过本步**。
 
 - [ ] **Step 9: 提交**
 
@@ -687,7 +693,7 @@ docs(rules): 新建 agent-conventions.md，agent 改为独立版本化并配套�
 
 ---
 
-## Task 4: 单点验证「版本号变小能否触发更新」
+## Task 4: 单点验证「新建 plugin.json 后版本能否被正确解析并更新」
 
 **Files:**
 - Create: `plugins/optimus-mcp-servers/.claude-plugin/plugin.json`
@@ -695,9 +701,11 @@ docs(rules): 新建 agent-conventions.md，agent 改为独立版本化并配套�
 
 **Interfaces:**
 - Consumes: 无（与 Task 1-3 无依赖，可并行；但**必须在 Task 5 之前完成**）
-- Produces: 一个已验证可正常更新的插件，以及一个 **go / no-go 判定**——通过则 Task 5 推广至其余 8 个；不通过则**停下回报**，spec § 7.3 决策需重新评估
+- Produces: 一个已验证可正常解析并更新的插件，以及一个 **go / no-go 判定**——通过则 Task 5 推广至其余 8 个；不通过则**停下回报**，spec § 7.3 决策需重新评估
 
-**为什么单独一个任务、且必须最先做版本部分**：官方明确「设了 `version` 就 pin 到该字符串，用户只在你 bump 时才收到更新」，但**未说明版本号变小（`12.1.8` → `1.0.0`）是否仍触发更新**。若客户端做的是「新值 > 旧值才更新」而非「新值 ≠ 旧值」，已安装用户会**静默卡在旧版本**——因为是静默的，我们收不到任何报错。不验证就全量重置，失败时 9 个插件的用户全部卡住。
+**为什么单独一个任务、且必须最先做版本部分**：本次是给从未有过 `.claude-plugin/plugin.json` 的插件**首次设立**该文件，需先在单点确认新值能被客户端正确解析为语义化版本、且已安装用户能正常收到更新，再全量推广。不验证就动全部 9 个，出问题时影响面是全部用户。
+
+⚠️ **Step 1 会同时证伪一个曾经的担心**：撰写本计划时曾担心「`12.1.8` → `1.0.0` 版本号变小，客户端若按『新值 > 旧值才更新』比较，已安装用户会静默卡住」。**实测该前提不成立**——本仓插件此前没有 `.claude-plugin/plugin.json`，Claude 侧按官方回退链解析到的是 **git commit SHA**（形如 `ae8271959d92`），codex 侧那个 `12.1.8` 从未进入 Claude 侧用户的本地缓存。因此本次不是「降版本」，而是「SHA → 语义化版本」的首次建立，不存在可供比较的旧语义化版本。Step 1 的 `claude plugin list` 输出会直接展示这一点。
 
 **为什么选 `optimus-mcp-servers` 做试点**：它无 `skills/` 目录（只有 `.mcp.json` 与 `scripts/`），改动面最小、影响最低。
 
@@ -707,8 +715,8 @@ Run:
 ```bash
 echo "=== 当前 codex 侧版本 ===" && cat plugins/optimus-mcp-servers/.codex-plugin/plugin.json
 echo ""
-echo "=== 该插件是否已安装（Claude 侧）==="
-ls ~/.claude/plugins/cache/ 2>/dev/null | head -20 || echo "（无 cache 目录）"
+echo "=== 已安装插件解析到的版本（预期为 commit SHA）==="
+claude plugin list 2>/dev/null | grep -A2 optimus || echo "（本仓插件未安装，Step 6 走路径 B）"
 echo ""
 echo "=== marketplace 顶层版本（应为 14.0.0，全程不动）==="
 python -c "import json;print(json.load(open('.claude-plugin/marketplace.json',encoding='utf-8'))['version'])"
@@ -716,9 +724,10 @@ python -c "import json;print(json.load(open('.claude-plugin/marketplace.json',en
 
 Expected:
 - codex 侧 `version` 为 `12.1.8`
+- 已安装的本仓插件版本显示为 **commit SHA**（形如 `ae8271959d92`），**不是** `12.1.8`——这印证了 Claude 侧此前没有 `.claude-plugin/plugin.json`，走的是官方回退链的 SHA 兜底
 - marketplace 顶层为 `14.0.0`
 
-⚠️ 把 cache 目录的输出**记下来**——Step 6 要对比。若本机从未安装过本仓插件（cache 里没有 `optimus-*`），Step 6 的更新验证走路径 B。
+⚠️ **把 `plugin list` 的输出记下来**——Step 6 要用它做前后对比。若本仓插件一个都没装，Step 6 走路径 B。
 
 - [ ] **Step 2: 新建 `.claude-plugin/plugin.json`**
 
@@ -775,7 +784,7 @@ Expected: 校验通过，无 error。
 
 ⚠️ **若出现「entry's `version` doesn't match the one in `plugin.json`」类警告**，说明 marketplace 该插件条目里有 `version` 字段（实测应该没有）。此时**不要给条目补 version**——正确处置是删掉条目里的 `version`（spec § 7.1：marketplace 插件条目永不填写 `version`）。
 
-- [ ] **Step 6: 🔴 CHECKPOINT — 更新行为验证（go / no-go 判定点）**
+- [ ] **Step 6: 🔴 CHECKPOINT — 版本解析与更新行为验证（go / no-go 判定点）**
 
 这是本任务的**目的**。两条路径，按本机实际情况选：
 
@@ -785,29 +794,35 @@ Expected: 校验通过，无 error。
 # 1. 刷新 marketplace 本地副本
 claude plugin marketplace update optimus-plugins-official
 
-# 2. 尝试更新该插件
-claude plugin update optimus-mcp-servers
+# 2. 查看改动前解析到的版本（预期为 commit SHA，非 12.1.8）
+claude plugin list
 
-# 3. 查看解析到的版本
+# 3. 本插件若已安装则直接更新；未安装则装上以验证解析结果
+claude plugin update optimus-mcp-servers \
+  || claude plugin install optimus-mcp-servers@optimus-plugins-official
+
+# 4. 再次查看解析到的版本
 claude plugin list
 ```
 
 判定：
-- ✅ **通过** — `plugin list` 显示 `optimus-mcp-servers` 版本为 `1.0.0`（或明确显示已更新）
-- ❌ **不通过** — 提示 "already up to date" / 版本仍显示 `12.1.8` / 仍显示 commit SHA
+- ✅ **通过** — `plugin list` 显示 `optimus-mcp-servers` 版本为 `1.0.0`（由 SHA 转为语义化版本）
+- ❌ **不通过** — 版本仍显示 commit SHA / 提示 "already up to date" 且版本未变
+
+⚠️ **本仓已安装的其他插件可作为对照**：它们尚无 `.claude-plugin/plugin.json`，`plugin list` 里会显示 commit SHA。对其执行 `claude plugin update` 应能正常更新到新 SHA——这印证更新是**按提交拉取**而非按版本号数值比较，与本次改动方向无冲突。
 
 **路径 B（本机未安装，或上述命令不可用）**：
 
-无法验证真实更新行为。此时**不得默认通过**：
+无法验证真实解析与更新行为。此时**不得默认通过**：
 
 ```bash
 claude plugin --help 2>&1 | head -20
 ```
 
 - 若命令存在但本仓未安装 → 先装上（`claude plugin marketplace add` 指向本仓），再走路径 A
-- 若命令不可用 → **停下来向用户回报**，说明无法在本机验证版本号变小的更新行为，请用户决定是（a）在其他已安装环境验证后再继续、（b）接受风险直接推广、还是（c）改用下面的退路
+- 若命令不可用 → **停下来向用户回报**，说明无法在本机验证，请用户决定是（a）在其他已安装环境验证后再继续，还是（b）接受风险直接推广
 
-🔴 **不通过时的退路（预先写定，避免临场决策）**：放弃「全部重置 `1.0.0`」，改为**从当前值继续递增**——`optimus-mcp-servers` 写 `12.1.9`（Patch，因本次只是设立载体）。此时须回头修改 spec § 7.3 的决策记录，并把 Task 5 的目标值改为各插件的「当前值 + Patch」。**该改动影响面较大，必须先向用户确认再执行。**
+🔴 **不通过时停下回报，不要临场自行改方案**。届时需重新评估 spec § 7.3 的决策（例如改为从当前值继续递增而非重置 `1.0.0`），该改动会波及 Task 5 全部 8 个插件与 Task 9 的下游 spec，**必须先与用户确认再执行**。
 
 - [ ] **Step 7: 提交**
 
@@ -1171,7 +1186,7 @@ Skill frontmatter / CHANGELOG 规范见 `.claude/rules/skill-conventions.md`（�
 |---|---|---|
 | `.claude/rules/skill-conventions.md` | SKILL.md 的六字段 frontmatter、执行前置校验、需求预告、持续优化约定 | `**/SKILL.md` |
 | `.claude/rules/doc-conventions.md` | 编辑铁律、CHANGELOG.md 格式、README.md 六章节（含 skill/agent 两栏差异） | `**/CHANGELOG.md`、`plugins/*/skills/**/README.md`、`plugins/*/agent-docs/**/*.md` |
-| `.claude/rules/agent-conventions.md` | agent 选型判据、`agents/` 目录硬约束、四字段 frontmatter、配套文档与独立版本化 | `plugins/*/agents/**/*.md` |
+| `.claude/rules/agent-conventions.md` | agent 选型判据、`agents/` 目录硬约束、四字段 frontmatter、配套文档与独立版本化 | `plugins/*/agents/*.md`、`plugins/*/agents/**/*.md` |
 
 三份规范**同时约束两个 harness**——frontmatter 字段是 Codex 也会原样读取缓存的内容，不存在"仅 Claude 遵守"的特例。
 ```
@@ -1995,7 +2010,7 @@ Edit，把这三行：
 
 ⚠️ **表格行序也变了**：原表以 marketplace 开头（旧机制它是真源），新表以 `.claude-plugin/plugin.json` 开头（新真源），marketplace 降到第三行且只剩 `description` 一项职责。**行序体现的是真源位置，不是排版偏好。**
 
-⚠️ **`1.0.0` → `1.1.0` 的前提**：Task 4/5 已把 devops 重置为 `1.0.0`。若 Task 4 的 CHECKPOINT 走了退路（改为从当前值递增），此处的 `1.0.0 → 1.1.0` 须相应改为「当前值 → 当前值升 Minor」。**执行本步时先确认 devops 的实际当前值。**
+⚠️ **`1.0.0` → `1.1.0` 的前提**：Task 4/5 已把 devops 的两份 `plugin.json` 设为 `1.0.0`。**执行本步时先确认 devops 的实际当前值**，以实际值为基准升 Minor。
 
 再改同表的 `skill-conventions.md` 那一行：
 
@@ -2006,7 +2021,7 @@ Edit，把这三行：
 改为：
 
 ```markdown
-| `.claude/rules/agent-conventions.md` | ✅ **已完成**（由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付）：agent 规范已从 `skill-conventions.md` 拆出为独立文件，`paths` 为 `plugins/*/agents/**/*.md`（用 `*.md` 而非 `*.agent.md`，纯 `.md` 的 agent 也能命中）；含选型判据、`agents/` 目录硬约束、frontmatter、配套文档位置、独立版本化、darwin-skill 豁免 | 同上 |
+| `.claude/rules/agent-conventions.md` | ✅ **已完成**（由 `2026-09-06-rules-split-and-agent-docs-design.md` 交付）：agent 规范已从 `skill-conventions.md` 拆出为独立文件，`paths` 为 `plugins/*/agents/*.md` 与 `plugins/*/agents/**/*.md` 两条（用 `*.md` 而非 `*.agent.md`，纯 `.md` 的 agent 也能命中；两条并存是因为平铺文件在严格 `**` 语义下不匹配单条 `**/*.md`）；含选型判据、`agents/` 目录硬约束、frontmatter、配套文档位置、独立版本化、darwin-skill 豁免 | 同上 |
 ```
 
 - [ ] **Step 5: 改 § 8.5 门禁落点**

@@ -301,12 +301,13 @@ CHANGELOG 的 `## [x.y.z]` 是版本号的规范载体，官方对插件根 CHAN
 |---|---|---|
 | `doc-conventions.md`（新建） | `**/CHANGELOG.md`<br>`plugins/*/skills/**/README.md`<br>`plugins/*/agent-docs/**/*.md` | 编辑任何 CHANGELOG、skill README、agent 配套文档 |
 | `skill-conventions.md`（保留原名，瘦身） | `**/SKILL.md` | 编辑 SKILL.md |
-| `agent-conventions.md`（新建） | `plugins/*/agents/**/*.md` | 编辑 agent 本体 |
+| `agent-conventions.md`（新建） | `plugins/*/agents/*.md` + `plugins/*/agents/**/*.md` | 编辑 agent 本体 |
 
 **三条 glob 的设计要点**：
 
 - `doc-conventions.md` 的 `plugins/*/agent-docs/**/*.md` 覆盖 agent 的 CHANGELOG 与 README。注意 `**/CHANGELOG.md` 已能覆盖前者，这条 glob 的实际增量是 **agent 的 README**（`plugins/*/skills/**/README.md` 那条覆盖不到 `agent-docs/`）
 - `agent-conventions.md` 用 `*.md` 而非 `*.agent.md`——若后续有人按 Claude Code 官方示例建纯 `.md` 的 agent，规范仍能自动加载。原 glob `plugins/*/agents/**/*.agent.md` 会漏掉这种情形
+- **两条 glob 并存**（`plugins/*/agents/*.md` + `plugins/*/agents/**/*.md`），而非只写后者：`agents/` 被硬约束为**平铺**，平铺文件的目录层数为零，而严格 glob 语义下 `**` 要求**至少一层**目录——只写 `**/*.md` 会对唯一合法形态（平铺）完全不匹配，规则文件永不加载。第一条命中平铺，第二条兜底误放子目录的情形，两种匹配语义下都成立
 - **`skill-conventions.md` 的 `paths` 从四条收窄到一条**。这是本次拆分的核心收益：编辑 CHANGELOG 不再注入 190 行无关内容
 
 ### 4.2 内容归属
@@ -469,17 +470,19 @@ harness 拉取、缓存、更新的最小粒度就是插件——所以插件层
 
 被放弃的方案是「沿用当前值继续递增」——它避免了视觉跳变，但会把无语义的三段数字永久继承下去，`optimus-office-plugin` 的那个 `12` 将永远无法解释。
 
-#### 7.3.1 ⚠️ 版本号变小的更新行为必须先验证（实施第一步）
+#### 7.3.1 ⚠️ 新建 plugin.json 后的解析与更新行为必须先验证（实施第一步）
 
-官方明确「设了 `version` 就 pin 到该字符串，用户只在你 bump 时才收到更新」，但**未说明版本号变小（`12.1.8` → `1.0.0`）是否仍触发更新**。已安装用户的本地缓存记的是旧值，若客户端做的是「新值 > 旧值才更新」的比较而非「新值 ≠ 旧值」，这批用户会**静默卡在旧版本**。
+本次是给从未有过 `.claude-plugin/plugin.json` 的插件**首次设立**该文件。设立后 Claude 侧的版本解析会从官方回退链的兜底项切换到 `plugin.json` 的值，需先在单点确认该值能被正确解析、且已安装用户能正常收到更新，再全量推广。
 
 因此实施顺序上这是**第一个动作，不是最后的验收项**：
 
 1. 先只改一个插件（建议 `optimus-mcp-servers`——它无 skills，改动面最小、影响最低）
-2. 在已安装该插件的环境上跑 `/plugin update`，确认能拉到新内容
-3. 通过 → 推广至其余 9 个；**不通过 → 停下来回报，本节决策需要重新评估**（可能的退路：先升到 `15.0.0` 完成真源下移，下一个大版本再重置）
+2. 跑 `claude plugin list` 看改动前解析到什么，再 `update` / `install` 后复看，确认变为 `1.0.0`
+3. 通过 → 推广至其余 8 个；**不通过 → 停下来回报，本节决策需要重新评估**
 
-⚠️ 这不是可跳过的谨慎——不验证就全量重置，失败时 9 个插件的已安装用户全部静默卡住，且**因为是静默的，我们不会收到任何报错**。
+⚠️ **一个曾经的担心已被实测证伪，记录于此避免重复顾虑**：原先担心「`12.1.8` → `1.0.0` 版本号变小，客户端若按『新值 > 旧值才更新』比较，已安装用户会静默卡住」。**该前提不成立**——本仓插件此前没有 `.claude-plugin/plugin.json`，Claude 侧按官方回退链解析到的是 **git commit SHA**（形如 `ae8271959d92`）；`.codex-plugin/plugin.json` 里那个 `12.1.8` 只有 Codex 侧读取，从未进入 Claude 侧用户的本地缓存。因此本次不是「降版本」，而是「SHA → 语义化版本」的首次建立，不存在可供数值比较的旧语义化版本。实测更新行为是**按提交拉取**，不做版本号大小比较。
+
+⚠️ 前提被证伪不等于验证可跳过——需要确认的已从「变小是否触发更新」变为「新设的 `version` 是否被正确解析」，验证动作本身仍是第一步。
 
 ### 7.4 触发矩阵：什么改动升哪一层
 
@@ -578,7 +581,7 @@ harness 拉取、缓存、更新的最小粒度就是插件——所以插件层
 
 | 项 | 处理 |
 |---|---|
-| **验证版本号变小能否触发更新** | ⚠️ **实施第一步**，见 § 7.3.1。先在 `optimus-mcp-servers` 单点验证，不通过则停下回报 |
+| **验证新建 plugin.json 后版本能否被正确解析并更新** | ⚠️ **实施第一步**，见 § 7.3.1。先在 `optimus-mcp-servers` 单点验证，不通过则停下回报 |
 | **9 个本仓插件**新建 `.claude-plugin/plugin.json` | **本次全部建**，`version` 一律 `1.0.0`——不建则 Claude 侧继续落到 commit SHA，改动只对 devops 一个生效等于没改 |
 | 同 9 个插件的 `.codex-plugin/plugin.json` | `version` 全部改为 `1.0.0`，与上一行**同一次改动内一起写**。这 9 个与上一行完全同一批，无缺口 |
 | **`cangjie-skill`（第 10 个条目）** | ❌ **排除在本机制之外**，见 § 7.7.1 |
@@ -679,7 +682,7 @@ harness 拉取、缓存、更新的最小粒度就是插件——所以插件层
 
 ### 9.4 版本真源下移正确性
 
-- [ ] ⚠️ **首个动作**：版本号变小能否触发更新已在 `optimus-mcp-servers` 单点验证通过（§ 7.3.1）——**未验证不得推广至其余 8 个**
+- [ ] ⚠️ **首个动作**：新建 `plugin.json` 后版本能被正确解析为 `1.0.0` 并正常更新，已在 `optimus-mcp-servers` 单点验证通过（§ 7.3.1）——**未验证不得推广至其余 8 个**
 - [ ] 9 个本仓插件均有 `.claude-plugin/plugin.json`，各含 `name` + `version: "1.0.0"`；有 agent 的插件另含 `agents` 文件路径数组
 - [ ] 9 个插件的 `.codex-plugin/plugin.json` 的 `version` 均为 `1.0.0`，与同插件 `.claude-plugin/plugin.json` 逐一比对同值
 - [ ] `cangjie-skill` **未被改动**——它是外部 url 源，不建 `plugin.json`、不填 `version`（§ 7.7.1）
