@@ -148,4 +148,6 @@ skill 需要引用某条规范/知识时，先用 Grep 在对应领域的 `index
 
 - `plugins/optimus-backend-plugin/skills/csharp-code-review`：审查规则以 `knowledge-base/csharp/` 为准，见该 skill 的"权威参考"章节。
 - `plugins/optimus-frontend-plugin/skills/wpf-code-review`、`wpf-project-conventions`：代码审查与项目结构判断依据见 `knowledge-base/wpf/`。
-- `.claude/rules/skill-conventions.md`：skill 的仓库专属约定（版本号、author、category、前置校验、需求预告、CHANGELOG、README）；通用规范引用 `knowledge-base/skill-authoring/`。
+- `.claude/rules/skill-conventions.md`：SKILL.md 的仓库专属约定（版本号、author、category、compatibility、allowed-tools、前置校验、需求预告、持续优化）；通用规范引用 `knowledge-base/skill-authoring/`。
+- `.claude/rules/doc-conventions.md`：CHANGELOG.md 与 README.md 的格式规范（含 skill / agent 两栏差异）、编辑铁律。
+- `.claude/rules/agent-conventions.md`：agent 的仓库专属约定（选型判据、`agents/` 目录硬约束、frontmatter、配套文档位置、独立版本化）。

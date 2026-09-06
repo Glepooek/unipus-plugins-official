@@ -2,7 +2,7 @@
 
 > 更新历史：2026-08-22 创建。
 >
-> 来源：[Agent Skills 规范](https://agentskills.io/specification)。本篇是格式层面的**硬约束**——违反会导致 skill 无法被跨 runtime 识别或校验失败。仓库专属约定（版本号、author、category、allowed-tools 写法）见 `.claude/rules/skill-conventions.md`，本篇不重复。
+> 来源：[Agent Skills 规范](https://agentskills.io/specification)。本篇是格式层面的**硬约束**——违反会导致 skill 无法被跨 runtime 识别或校验失败。仓库专属约定（版本号、author、category、allowed-tools 写法）见 `.claude/rules/skill-conventions.md`，配套文档（CHANGELOG / README）格式见 `.claude/rules/doc-conventions.md`，本篇均不重复。
 
 ## 1. 目录结构
 
@@ -81,7 +81,7 @@ Agent 按三阶段渐进加载 skill，控制上下文占用：
 skills-ref validate ./my-skill
 ```
 
-- **应该**：校验通过后，按 `.claude/rules/skill-conventions.md` 的仓库约定（版本号、author、category、CHANGELOG）补齐仓库侧要求
+- **应该**：校验通过后，按 `.claude/rules/skill-conventions.md` 补齐 SKILL.md 侧要求（版本号、author、category），按 `.claude/rules/doc-conventions.md` 补齐 CHANGELOG.md 与 README.md
 
 ## 权威参考
 

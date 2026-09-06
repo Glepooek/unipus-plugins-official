@@ -76,9 +76,9 @@
       "categories": ["rules", "reference"],
       "owner": "desktop client team",
       "status": "active",
-      "consumers": [".claude/rules/skill-conventions.md", ".claude/skills/darwin-skill"],
+      "consumers": [".claude/rules/skill-conventions.md", ".claude/rules/doc-conventions.md", ".claude/rules/agent-conventions.md", ".claude/skills/darwin-skill"],
       "reviewed_at": "2026-08-27",
-      "notes": "开放 Agent Skills 规范的通用约束；本仓库专属约定见 .claude/rules/skill-conventions.md"
+      "notes": "开放 Agent Skills 规范的通用约束；本仓库专属约定见 .claude/rules/ 三份规则文件（skill-conventions / doc-conventions / agent-conventions）"
     },
     {
       "domain": "design-patterns",
